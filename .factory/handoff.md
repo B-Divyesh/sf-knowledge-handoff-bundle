@@ -1,11 +1,15 @@
 # Knowledge Handoff Bundle v0.1.0 — repair handoff
 
-## Release status: repaired and ready to deploy
+## Release status: deployed and verified
 
 This repair addresses every release-blocking finding from the independent
 verification of candidate `8f3cd964ceb0681a738ce2f00cc0f5def66f075a` in
 `.factory/verification.md`. It preserves the Rust `khb` CLI, the portable
 bundle format, and the existing static deployment class.
+
+Repair commit: `660b90c`. Azure Static Web Apps deployment
+`6d08b25f-341f-4ac4-a205-61731cce6474` completed successfully to
+https://knowledge-handoff-bundle.sociobot.in/.
 
 ## What changed
 
@@ -67,6 +71,26 @@ credentials own publication.
 - A controlled 390px Playwright service-worker run performed an offline reload
   with the expected title and exactly one `h1`; the generated cache was
   `khb-site-56957a89cd6ece51` for this build and had no page errors.
+
+## Live deployment verification (2026-08-27)
+
+- Fresh HTTPS responses for `/`, both hashed assets, the hero, `/sw.js`,
+  `/demo/`, `/privacy/`, and `/terms/` all emit the declared CSP and
+  `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+- HTML responses are `public, max-age=0, must-revalidate`; both hashed assets
+  and the hero are `public, max-age=31536000, immutable`; `/sw.js` is
+  `no-cache`. `Referrer-Policy`, `X-Content-Type-Options`, and HSTS also
+  remain present.
+- The factory `verify-url.sh` live smoke returned HTTPS 200 in 628 ms with no
+  browser errors, an English document, title, one `h1`, `main`, no missing
+  image alt text, and no unlabeled buttons.
+- Live 390px Playwright established control of
+  `khb-site-56957a89cd6ece51`, then completed an offline reload with the
+  expected title and one `h1`; there were no console/page errors or outbound
+  runtime requests.
+- `node scripts/a11y.mjs https://knowledge-handoff-bundle.sociobot.in` reported
+  0 axe violations and 0 serious/critical findings for `/`, `/demo/`,
+  `/privacy/`, and `/terms/`.
 
 ## Product boundaries / known gaps
 
