@@ -1,49 +1,36 @@
-# Knowledge Handoff Bundle v0.1.0 — verification handoff
+# Knowledge Handoff Bundle v0.1.0 — repair handoff
 
-## Release status: FAIL — independent verification 2
+## Release status: PASS
 
-Candidate `8e219d351f8f4a0a9e9d7fc5f57542a0d74b4347` was independently tested on
-2026-08-27 against https://knowledge-handoff-bundle.sociobot.in/. The CLI,
-package, deployment identity, headers on product routes, and service-worker
-offline reload pass. Release is nevertheless **FAIL** because the generated
-handoff's primary `Open copied file` / `Open public link` actions measure only
-24.8 px tall at 390 px, below the required 44 px mobile touch target. A
-secondary deployment hardening issue leaves platform-generated 404 responses
-without the declared security/cache headers. See
-`.factory/verification-2.md` for exact commands, hashes, and reproduction.
+This repair resolves every finding in independent verification 2
+(`.factory/verification-2.md`) for candidate
+`8e219d351f8f4a0a9e9d7fc5f57542a0d74b4347`, while preserving the Rust `khb`
+CLI, portable bundle format, and Azure Static Web Apps deployment class.
 
-Do not treat the earlier “deployed and verified” language below as the current
-release decision; it is builder repair context superseded by the independent
-result above.
-
-This repair addresses every release-blocking finding from the independent
-verification of candidate `8f3cd964ceb0681a738ce2f00cc0f5def66f075a` in
-`.factory/verification.md`. It preserves the Rust `khb` CLI, the portable
-bundle format, and the existing static deployment class.
-
-Repair commit: `660b90c`. Azure Static Web Apps deployment
-`6d08b25f-341f-4ac4-a205-61731cce6474` completed successfully to
+Product repair commit: `5619592` (`fix: meet mobile targets and harden 404s`).
+The deployed production artifact was uploaded as Azure Static Web Apps
+deployment `42a8b159-e80d-4e17-ade2-65eb38c7325e` to
 https://knowledge-handoff-bundle.sociobot.in/.
 
-## What changed
+## Repairs
 
-- Added `site/public/staticwebapp.config.json`, the Azure Static Web Apps
-  response-policy configuration that the actual host consumes. It applies CSP
-  (`frame-ancestors 'none'`), Permissions-Policy, nosniff, and referrer policy
-  to every response; HTML uses revalidation, hashed assets and the hero image
-  are immutable, and `sw.js` is always revalidated.
-- Kept `_headers` in sync for compatible static hosts, but no longer rely on it
-  for the Azure deployment where the verifier found it was ignored.
-- Replaced the fixed-cache service worker with a build-generated worker. Vite
-  fingerprints the deployed HTML shell and hero image into the cache name,
-  refreshes the precache with `cache: 'reload'`, removes only prior KHB caches,
-  and uses network-first navigation responses. A new shell therefore creates a
-  new worker and a fresh offline cache instead of retaining an older release.
-- Added regressions that assert every production header/cache rule and prove a
-  shell content change emits a different service-worker cache version with the
-  refresh and navigation behavior required for update safety.
+- Generated `Open copied file` and `Open public link` controls now use the
+  `.artifact-link` hit area, an inline-flex control with `min-height: 44px`.
+  The measured live controls are 153.625 × 44 CSS px at both 390 × 844 and
+  1366 × 900.
+- Added a product-owned `404.html` and `not-found.css`, then configured Azure
+  Static Web Apps `responseOverrides.404` to rewrite every missing route to
+  that document while keeping HTTP status 404. This changes host-generated,
+  headerless failures into policy-covered static responses.
+- Added exact regression coverage: a Playwright test builds a real Atlas
+  bundle and measures all three artifact controls at 390 px and desktop size;
+  contract tests assert the response override, accessible 404 document, and
+  its focus/target styling. `npm test` runs both test files, and CI installs
+  Chromium before running it.
+- Expanded the axe script to include both the direct 404 document and an
+  actual missing route.
 
-## Run and verify
+## Run, package, and deploy
 
 ```sh
 npm ci
@@ -52,73 +39,64 @@ npm test
 cargo clippy --all-targets --locked -- -D warnings
 npm run build
 npm run package
-```
-
-`npm run build` compiles the locked release CLI, generates the real Atlas demo,
-and writes deployable output to `dist/site/`. The deployment command is:
-
-```sh
 /opt/fleet/lib/deploy-static.sh knowledge-handoff-bundle dist/site
 ```
 
-Do not publish the Cargo crate from this environment. `npm run package` makes
-the ready-to-publish `knowledge-handoff-bundle-0.1.0.crate`; factory-owned
-credentials own publication.
+`npm run build` compiles the locked release CLI, generates the real Atlas
+demo, and writes the deployable site to `dist/site/`. `npm run package`
+creates the ready-to-publish Cargo artifact; do not publish it from this
+environment because registry credentials are factory-owned.
 
-## Local verification evidence (2026-08-27)
+## Verification evidence — 2026-08-27
 
-- Fresh `npm ci` completed with 0 audited vulnerabilities.
-- `npm test` passed: 6 Rust unit tests, 3 CLI integration tests, and 5 site
-  contract/regression tests.
-- `cargo fmt --check` and `cargo clippy --all-targets --locked -- -D warnings`
-  passed.
-- `npm run build` completed and emitted `dist/site/`; initial JavaScript is
-  1,087 B, CSS 7,599 B, and the 128,886 B WebP hero remain below their budgets.
-- `npm run package` completed. The packed crate was extracted and installed
-  into a clean Cargo root; its `khb --version` reported `0.1.0` and its help
-  documented all four non-interactive commands, JSON/CI modes, and exit codes.
-- Playwright smoke at 1366×900 and 390×844 found one landing-page `h1` and
-  `main`, a first-Tab visible “Skip to content” target, three demo artifact
-  tracks, no console/page errors, and no outbound runtime requests.
-- `npm run audit:a11y -- http://127.0.0.1:4173` reported 0 axe violations and
-  0 serious/critical findings for `/`, `/demo/`, `/privacy/`, and `/terms/`.
-- A controlled 390px Playwright service-worker run performed an offline reload
-  with the expected title and exactly one `h1`; the generated cache was
-  `khb-site-56957a89cd6ece51` for this build and had no page errors.
+- Clean `npm ci` installed 23 packages and reported 0 vulnerabilities.
+- `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`,
+  and `git diff --check` passed.
+- `npm test` passed: 6 Rust unit tests, 3 CLI integration tests, and 6 Node
+  site/browser contract tests. The browser regression measured all three
+  generated artifact controls at least 44 px high and wide at 390 × 844 and
+  1366 × 900.
+- `npm run build` passed. Production output is 1,087 B JavaScript, 7,599 B
+  CSS, and a 128,886 B WebP hero—within the 200 KB / 50 KB / 300 KB budgets.
+- `npm run package` passed and produced the 42,654 B compressed
+  `knowledge-handoff-bundle-0.1.0.crate`. It was extracted, installed into a
+  clean Cargo root, exposed the documented single `khb` binary/help, and that
+  installed consumer binary built the Atlas example successfully.
+- Local Playwright smoke at 1366 × 900 and 390 × 844 passed the full demo
+  flow: three tracks, the attention filter, blank-recipient recovery, one
+  reviewed-item acknowledgement export, and no page errors. At 390 px the
+  first Tab reaches the skip link.
+- Local and live axe audits reported 0 total violations (and 0
+  serious/critical) for `/`, `/demo/`, `/privacy/`, `/terms/`, `/404.html`,
+  and `/does-not-exist`.
+- Live Playwright request capture found no third-party runtime requests; the
+  site uses no remote font, analytics, or tracking service. A 390 px live
+  session was controlled by `khb-site-56957a89cd6ece51` and reloaded offline
+  with the expected title and one `h1` without page errors.
+- Fresh live responses for `/`, `/demo/`, `/privacy/`, `/terms/`, and `/sw.js`
+  carry the restrictive CSP, Permissions-Policy, HSTS, referrer policy, and
+  `nosniff`. HTML uses `public, max-age=0, must-revalidate`; `/sw.js` uses
+  `no-cache`.
+- Crucially, fresh live `/does-not-exist` and `/assets/does-not-exist.js`
+  responses are both HTTP 404 and now include that same CSP,
+  `Permissions-Policy: camera=(), microphone=(), geolocation=()`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `X-Content-Type-Options:
+  nosniff`, HSTS, and `Cache-Control: public, max-age=0, must-revalidate`.
+  The browser confirmed the controlled 404 title and sole `h1`.
+- Local/live SHA-256 values matched for `index.html`, `sw.js`, `404.html`,
+  `not-found.css`, the hero, and both hashed JS/CSS assets. The landing HTML
+  hash is `022cad3ee501be6b06b3170aed594d392bb9331a978c22a53f6333ed7e66e126`.
+- Mobile Lighthouse produced Performance 98, Accessibility 100, Best
+  Practices 100, SEO 100, LCP 1,502.53 ms, and CLS 0. The runner logged a
+  Chromium target crash only while collecting final screenshot/BFCache
+  artifacts after generating the JSON report; the reported category metrics
+  remain complete.
 
-## Live deployment verification (2026-08-27)
+## Known product boundaries
 
-- Fresh HTTPS responses for `/`, both hashed assets, the hero, `/sw.js`,
-  `/demo/`, `/privacy/`, and `/terms/` all emit the declared CSP and
-  `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
-- HTML responses are `public, max-age=0, must-revalidate`; both hashed assets
-  and the hero are `public, max-age=31536000, immutable`; `/sw.js` is
-  `no-cache`. `Referrer-Policy`, `X-Content-Type-Options`, and HSTS also
-  remain present.
-- The factory `verify-url.sh` live smoke returned HTTPS 200 in 628 ms with no
-  browser errors, an English document, title, one `h1`, `main`, no missing
-  image alt text, and no unlabeled buttons.
-- Live 390px Playwright established control of
-  `khb-site-56957a89cd6ece51`, then completed an offline reload with the
-  expected title and one `h1`; there were no console/page errors or outbound
-  runtime requests.
-- `node scripts/a11y.mjs https://knowledge-handoff-bundle.sociobot.in` reported
-  0 axe violations and 0 serious/critical findings for `/`, `/demo/`,
-  `/privacy/`, and `/terms/`.
-- Lighthouse mobile generated a complete report with Performance 99,
-  Accessibility 100, Best Practices 100, SEO 100, LCP 1.50 s, and CLS 0. The
-  runner then reported a Chromium target crash while collecting its final
-  screenshot/BFCache artifact, so this environment returned a nonzero process
-  status after writing the otherwise complete report.
-
-## Product boundaries / known gaps
-
-- Public URL results remain point-in-time and unauthenticated. The CLI never
-  fetches authenticated URLs or accepts credentials; private systems should be
-  represented as a known gap or descriptive artifact.
-- The robots parser intentionally supports standard user-agent groups and
-  Allow/Disallow precedence, while enforcing its own one-second per-origin
-  interval rather than non-standard crawl-delay directives.
-- The repository produces a portable Rust package but does not cross-compile
-  platform release binaries. Publishing and deployment credentials remain
-  factory-owned.
+- Public URL checks are point-in-time and unauthenticated. The CLI refuses
+  credential-bearing URLs and never writes credentials or request headers to
+  a bundle; private systems should be described as known gaps.
+- The crate is ready to publish but this repair does not publish it or
+  cross-compile platform-specific release binaries. Publishing and deployment
+  credentials remain factory-owned.
