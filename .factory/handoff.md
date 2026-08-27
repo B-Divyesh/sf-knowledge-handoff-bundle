@@ -1,20 +1,31 @@
-# Knowledge Handoff Bundle v0.1.0 — verification handoff
+# Knowledge Handoff Bundle v0.1.0 — repair handoff
 
-## Verification status: FAIL
+## Release status: repaired and ready to deploy
 
-Independent verification on 2026-08-27 tested candidate
-`8f3cd964ceb0681a738ce2f00cc0f5def66f075a` against
-https://knowledge-handoff-bundle.sociobot.in/. The core CLI, packaged consumer
-installation, build, generated bundle, accessibility checks, and live identity
-passed. Release is **not approved** because production omits the declared CSP
-and Permissions-Policy and the service worker uses a fixed cache key that can
-serve stale shell content after future deployments. Exact evidence and required
-remediation are in `.factory/verification.md`.
+This repair addresses every release-blocking finding from the independent
+verification of candidate `8f3cd964ceb0681a738ce2f00cc0f5def66f075a` in
+`.factory/verification.md`. It preserves the Rust `khb` CLI, the portable
+bundle format, and the existing static deployment class.
 
-The live landing HTML exactly matched the candidate production build (SHA-256
-`022cad3ee501be6b06b3170aed594d392bb9331a978c22a53f6333ed7e66e126`).
+## What changed
 
-To reproduce the successful local checks:
+- Added `site/public/staticwebapp.config.json`, the Azure Static Web Apps
+  response-policy configuration that the actual host consumes. It applies CSP
+  (`frame-ancestors 'none'`), Permissions-Policy, nosniff, and referrer policy
+  to every response; HTML uses revalidation, hashed assets and the hero image
+  are immutable, and `sw.js` is always revalidated.
+- Kept `_headers` in sync for compatible static hosts, but no longer rely on it
+  for the Azure deployment where the verifier found it was ignored.
+- Replaced the fixed-cache service worker with a build-generated worker. Vite
+  fingerprints the deployed HTML shell and hero image into the cache name,
+  refreshes the precache with `cache: 'reload'`, removes only prior KHB caches,
+  and uses network-first navigation responses. A new shell therefore creates a
+  new worker and a fresh offline cache instead of retaining an older release.
+- Added regressions that assert every production header/cache rule and prove a
+  shell content change emits a different service-worker cache version with the
+  refresh and navigation behavior required for update safety.
+
+## Run and verify
 
 ```sh
 npm ci
@@ -23,55 +34,48 @@ npm test
 cargo clippy --all-targets --locked -- -D warnings
 npm run build
 npm run package
-python3 -m http.server 4173 --directory dist/site
-npm run audit:a11y
 ```
 
-Do not publish the package from this environment. `npm run package` creates the
-ready-to-publish Cargo crate; factory-owned credentials handle publishing.
-
-## What shipped
-
-- A Rust single-binary CLI (`khb`) with four non-interactive commands: `init`, `check`, `build`, and `acknowledge`.
-- YAML validation for project metadata, ownership, unique IDs, file/URL shape, dates, expiry warnings, missing files, directory traversal, symlink escape, and credential-like URLs.
-- Opt-in public link checking with a named user agent, one-second per-origin pacing, redirects/timeouts, and `robots.txt` Allow/Disallow handling. No authenticated requests or headers are accepted.
-- A static bundle renderer that copies local files under safe names, records byte counts and SHA-256 hashes, preserves public URLs, surfaces broken/unchecked/expired status, and writes a transparent `manifest.json`.
-- A responsive, keyboard-operable recipient site that works from disk, filters artifacts, identifies known gaps, saves review state locally, handles offline status, and exports a manifest-bound acknowledgement JSON.
-- A Vite landing/docs site at `dist/site/` with a real CLI-generated sample bundle at `/demo/`, install/usage documentation, privacy and terms pages, service-worker shell caching, and immutable asset headers.
-- An original cassette-era zine hero illustration generated with `/opt/fleet/lib/gen-image.sh` (`factory-image`, 1536×1024 high quality), then resized and compressed to a 126 KB WebP. The full prompt and provenance are recorded in `.factory/design.md`.
-
-## Run and verify
+`npm run build` compiles the locked release CLI, generates the real Atlas demo,
+and writes deployable output to `dist/site/`. The deployment command is:
 
 ```sh
-npm ci
-npm test
-npm run build
-npm run package
+/opt/fleet/lib/deploy-static.sh knowledge-handoff-bundle dist/site
 ```
 
-`npm run build` is the deploy build command. It compiles the release CLI, generates the real sample bundle, and writes the static deployment to `dist/site/` with `dist/site/index.html` at its root.
+Do not publish the Cargo crate from this environment. `npm run package` makes
+the ready-to-publish `knowledge-handoff-bundle-0.1.0.crate`; factory-owned
+credentials own publication.
 
-For a local browser audit:
+## Local verification evidence (2026-08-27)
 
-```sh
-python3 -m http.server 4173 --directory dist/site
-npm run audit:a11y
-```
+- Fresh `npm ci` completed with 0 audited vulnerabilities.
+- `npm test` passed: 6 Rust unit tests, 3 CLI integration tests, and 5 site
+  contract/regression tests.
+- `cargo fmt --check` and `cargo clippy --all-targets --locked -- -D warnings`
+  passed.
+- `npm run build` completed and emitted `dist/site/`; initial JavaScript is
+  1,087 B, CSS 7,599 B, and the 128,886 B WebP hero remain below their budgets.
+- `npm run package` completed. The packed crate was extracted and installed
+  into a clean Cargo root; its `khb --version` reported `0.1.0` and its help
+  documented all four non-interactive commands, JSON/CI modes, and exit codes.
+- Playwright smoke at 1366×900 and 390×844 found one landing-page `h1` and
+  `main`, a first-Tab visible “Skip to content” target, three demo artifact
+  tracks, no console/page errors, and no outbound runtime requests.
+- `npm run audit:a11y -- http://127.0.0.1:4173` reported 0 axe violations and
+  0 serious/critical findings for `/`, `/demo/`, `/privacy/`, and `/terms/`.
+- A controlled 390px Playwright service-worker run performed an offline reload
+  with the expected title and exactly one `h1`; the generated cache was
+  `khb-site-56957a89cd6ece51` for this build and had no page errors.
 
-Verified on 2026-08-27:
+## Product boundaries / known gaps
 
-- `npm test`: 6 Rust unit tests, 3 CLI integration tests, and 3 site contract tests passed.
-- `npm run build`: passed; production site and generated demo emitted to `dist/site/`.
-- `npm run package`: passed; Cargo packaged and compiled `knowledge-handoff-bundle-0.1.0` without publishing.
-- Browser smoke test at desktop 1366×900 and mobile 390×844: both landing page and generated demo returned 200, had one `h1`, `lang`, `main`, complete image alt text, and zero console/page errors.
-- Playwright + axe on `/`, `/demo/`, `/privacy/`, and `/terms/`: 0 violations, 0 serious/critical.
-- Lighthouse mobile: Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.7 s, CLS 0, total transfer 142 KB. INP is unavailable in a lab run with no user input.
-- Production asset sizes: initial JS 1.08 KB, CSS 7.59 KB, hero WebP 126 KB; all are below the product budgets.
-- `npm audit`: 0 vulnerabilities.
-
-## Known gaps and next steps
-
-- URL results are deliberately point-in-time and unauthenticated. Private/authenticated systems are represented as owned gaps or descriptive artifacts, not fetched; this is a product boundary from the brief.
-- The robots parser covers the standard user-agent groups plus prefix-based Allow/Disallow precedence. It does not interpret non-standard directives or site-specific crawl-delay values; the checker always enforces its own conservative one-second per-origin interval.
-- Release binaries are reproducible through Cargo but are not cross-compiled in this repository. The factory can add platform release artifacts later; registry credentials and publication remain factory-owned.
-- Lighthouse INP requires field interaction data. Keyboard behavior and acknowledgement feedback were exercised in the Playwright/axe smoke test instead.
+- Public URL results remain point-in-time and unauthenticated. The CLI never
+  fetches authenticated URLs or accepts credentials; private systems should be
+  represented as a known gap or descriptive artifact.
+- The robots parser intentionally supports standard user-agent groups and
+  Allow/Disallow precedence, while enforcing its own one-second per-origin
+  interval rather than non-standard crawl-delay directives.
+- The repository produces a portable Rust package but does not cross-compile
+  platform release binaries. Publishing and deployment credentials remain
+  factory-owned.
