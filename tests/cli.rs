@@ -98,6 +98,7 @@ sections:
         .unwrap();
     assert_eq!(output.status.code(), Some(2));
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["ok"], false);
     assert_eq!(json["result"]["errors"], 1);
 }
 

@@ -137,6 +137,7 @@ fn fetch_robots(client: &Client, target: &Url) -> RobotsPolicy {
 fn parse_robots(body: &str) -> RobotsPolicy {
     let mut policy = RobotsPolicy::default();
     let mut applies = false;
+    let mut group_has_rules = false;
     for line in body.lines() {
         let line = line.split('#').next().unwrap_or("").trim();
         let Some((key, value)) = line.split_once(':') else {
@@ -145,12 +146,20 @@ fn parse_robots(body: &str) -> RobotsPolicy {
         let key = key.trim().to_ascii_lowercase();
         let value = value.trim();
         if key == "user-agent" {
+            if group_has_rules {
+                applies = false;
+                group_has_rules = false;
+            }
             let agent = value.to_ascii_lowercase();
-            applies = agent == "*" || agent.contains("knowledge-handoff-bundle");
+            applies |= agent == "*" || agent.contains("knowledge-handoff-bundle");
         } else if applies && key == "disallow" {
             policy.disallow.push(value.to_string());
+            group_has_rules = true;
         } else if applies && key == "allow" {
             policy.allow.push(value.to_string());
+            group_has_rules = true;
+        } else if matches!(key.as_str(), "allow" | "disallow") {
+            group_has_rules = true;
         }
     }
     policy
@@ -175,5 +184,14 @@ mod tests {
         assert!(!policy.allows("/private/notes"));
         assert!(policy.allows("/private/public/index"));
         assert!(policy.allows("/other"));
+    }
+
+    #[test]
+    fn robots_handles_multiple_agents_in_one_group() {
+        let policy = parse_robots(
+            "User-agent: *\nUser-agent: knowledge-handoff-bundle\nDisallow: /archive\n\nUser-agent: other\nDisallow: /\n",
+        );
+        assert!(!policy.allows("/archive/item"));
+        assert!(policy.allows("/current"));
     }
 }

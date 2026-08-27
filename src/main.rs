@@ -72,6 +72,7 @@ enum Command {
     },
     /// Validate YAML, local files, dates, and optionally public links
     Check {
+        /// YAML handoff checklist to validate
         file: PathBuf,
         /// Check public URLs (rate-limited and robots-aware)
         #[arg(long)]
@@ -79,6 +80,7 @@ enum Command {
     },
     /// Build the static handoff directory
     Build {
+        /// YAML handoff checklist to build
         file: PathBuf,
         /// Output directory for the portable bundle
         #[arg(short, long, default_value = "handoff-bundle")]
@@ -92,6 +94,7 @@ enum Command {
     },
     /// Export a recipient acknowledgement tied to a manifest hash
     Acknowledge {
+        /// Generated bundle manifest.json
         manifest: PathBuf,
         /// Recipient's full name
         #[arg(long)]
@@ -153,7 +156,7 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                 ));
             }
             fs::write(file, STARTER).map_err(io_error)?;
-            emit(cli.json, "init", serde_json::json!({ "file": file }))?;
+            emit(cli.json, "init", true, serde_json::json!({ "file": file }))?;
             if !cli.json {
                 println!(
                     "Wrote {}. Add files, owners, URLs, and known gaps, then run `khb check`. ",
@@ -182,6 +185,7 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                 emit(
                     cli.json,
                     "check",
+                    errors == 0 && !(cli.ci && warnings > 0),
                     serde_json::json!({
                         "file": file,
                         "errors": errors,
@@ -226,6 +230,7 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                     emit(
                         cli.json,
                         "build",
+                        false,
                         serde_json::json!({ "built": false, "findings": findings }),
                     )?;
                 } else {
@@ -246,6 +251,7 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                 emit(
                     cli.json,
                     "build",
+                    !(cli.ci && (warning_count > 0 || manifest.summary.errors > 0)),
                     serde_json::json!({
                         "output": output,
                         "summary": manifest.summary
@@ -319,6 +325,7 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                 emit(
                     cli.json,
                     "acknowledge",
+                    true,
                     serde_json::json!({ "output": output, "acknowledgement": ack }),
                 )?;
             } else {
@@ -346,10 +353,15 @@ fn io_error(error: std::io::Error) -> (u8, String) {
     (4, error.to_string())
 }
 
-fn emit<T: Serialize>(json: bool, command: &'static str, value: T) -> Result<(), (u8, String)> {
+fn emit<T: Serialize>(
+    json: bool,
+    command: &'static str,
+    ok: bool,
+    value: T,
+) -> Result<(), (u8, String)> {
     if json {
         let output = serde_json::to_string(&CommandResult {
-            ok: true,
+            ok,
             command,
             result: value,
         })

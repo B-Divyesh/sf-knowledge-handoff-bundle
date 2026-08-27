@@ -7,6 +7,7 @@ use url::Url;
 pub fn validate(handoff: &Handoff, input_dir: &Path) -> Vec<Finding> {
     let mut findings = Vec::new();
     let mut ids = HashSet::new();
+    let canonical_input = std::fs::canonicalize(input_dir).ok();
 
     if handoff.project.title.trim().is_empty() {
         error(
@@ -113,6 +114,19 @@ pub fn validate(handoff: &Handoff, input_dir: &Path) -> Vec<Finding> {
                             &format!("Local file was not found: {path}"),
                             Some(&artifact.id),
                         ),
+                        Some(path)
+                            if canonical_input.as_ref().is_some_and(|base| {
+                                std::fs::canonicalize(input_dir.join(path))
+                                    .is_ok_and(|resolved| !resolved.starts_with(base))
+                            }) =>
+                        {
+                            error(
+                                &mut findings,
+                                "artifact.path_escape",
+                                "File resolves outside the handoff directory",
+                                Some(&artifact.id),
+                            )
+                        }
                         _ => {}
                     }
                 }

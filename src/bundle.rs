@@ -121,7 +121,15 @@ fn prepare_output(output: &Path, input_dir: &Path, force: bool) -> Result<(), St
     } else {
         cwd.join(output)
     };
-    let dangerous = absolute.parent().is_none() || absolute == cwd || absolute == input_dir;
+    let resolved_output = if output.exists() {
+        fs::canonicalize(output).map_err(|e| e.to_string())?
+    } else {
+        absolute.clone()
+    };
+    let resolved_input = fs::canonicalize(input_dir).map_err(|e| e.to_string())?;
+    let dangerous = resolved_output.parent().is_none()
+        || resolved_output == cwd
+        || resolved_output == resolved_input;
     if dangerous {
         return Err(
             "Refusing to use a repository, input directory, or filesystem root as output".into(),
@@ -219,5 +227,13 @@ mod tests {
     #[test]
     fn html_escapes_project_copy() {
         assert_eq!(escape("A & <B>"), "A &amp; &lt;B&gt;");
+    }
+
+    #[test]
+    fn output_cannot_replace_input_directory() {
+        let input = tempfile::tempdir().unwrap();
+        let result = prepare_output(input.path(), input.path(), true);
+        assert!(result.is_err());
+        assert!(input.path().exists());
     }
 }
