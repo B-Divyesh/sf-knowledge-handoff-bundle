@@ -1,6 +1,20 @@
-# Knowledge Handoff Bundle v0.1.0 — repair handoff
+# Knowledge Handoff Bundle v0.1.0 — verification handoff
 
-## Release status: deployed and verified
+## Release status: FAIL — independent verification 2
+
+Candidate `8e219d351f8f4a0a9e9d7fc5f57542a0d74b4347` was independently tested on
+2026-08-27 against https://knowledge-handoff-bundle.sociobot.in/. The CLI,
+package, deployment identity, headers on product routes, and service-worker
+offline reload pass. Release is nevertheless **FAIL** because the generated
+handoff's primary `Open copied file` / `Open public link` actions measure only
+24.8 px tall at 390 px, below the required 44 px mobile touch target. A
+secondary deployment hardening issue leaves platform-generated 404 responses
+without the declared security/cache headers. See
+`.factory/verification-2.md` for exact commands, hashes, and reproduction.
+
+Do not treat the earlier “deployed and verified” language below as the current
+release decision; it is builder repair context superseded by the independent
+result above.
 
 This repair addresses every release-blocking finding from the independent
 verification of candidate `8f3cd964ceb0681a738ce2f00cc0f5def66f075a` in
