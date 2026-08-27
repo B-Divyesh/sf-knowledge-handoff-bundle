@@ -1,0 +1,10 @@
+{
+  "slug": "knowledge-handoff-bundle",
+  "title": "Knowledge Handoff Bundle",
+  "territory": "utilities",
+  "user": "A departing project owner or small team handing work to someone else who needs a durable, browseable package showing the current source of truth, linked files, and unresolved gaps.",
+  "smallest_useful_product": "A CLI that turns a YAML checklist and local files/URLs into a static handoff site with manifest, link checks, ownership fields, expiry warnings, and a recipient acknowledgement export.",
+  "artifact_class": "cli",
+  "monetization": "free",
+  "constraints": "Never fetch authenticated URLs without explicit user-supplied credentials; avoid storing secrets in generated sites; link checking must respect rate limits and robots controls."
+}
