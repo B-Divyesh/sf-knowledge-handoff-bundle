@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { chromium } from 'playwright';
 
 const baseUrl = process.argv[2] ?? 'http://127.0.0.1:4173';
-const routes = ['/', '/demo/', '/privacy/', '/terms/'];
+const routes = ['/', '/demo/', '/privacy/', '/terms/', '/404.html'];
 const browser = await chromium.launch();
 let failed = false;
 

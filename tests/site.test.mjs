@@ -8,6 +8,8 @@ import { writeServiceWorker } from '../scripts/service-worker.mjs';
 const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../site/src/style.css', import.meta.url), 'utf8');
 const staticWebAppConfig = JSON.parse(readFileSync(new URL('../site/public/staticwebapp.config.json', import.meta.url), 'utf8'));
+const notFoundHtml = readFileSync(new URL('../site/public/404.html', import.meta.url), 'utf8');
+const notFoundCss = readFileSync(new URL('../site/public/not-found.css', import.meta.url), 'utf8');
 
 test('landing page has the required accessibility landmarks', () => {
   assert.match(html, /<html lang="en">/);
@@ -28,7 +30,7 @@ test('hero declares dimensions and high fetch priority', () => {
   assert.match(html, /cassette-handoff\.webp[^>]+width="1200"[^>]+height="800"[^>]+fetchpriority="high"/);
 });
 
-test('Azure Static Web Apps response policy protects every response and keeps only hashed assets immutable', () => {
+test('Azure Static Web Apps response policy protects every response, including controlled 404s', () => {
   assert.equal(staticWebAppConfig.globalHeaders['Content-Security-Policy'], "default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
   assert.equal(staticWebAppConfig.globalHeaders['Permissions-Policy'], 'camera=(), microphone=(), geolocation=()');
   assert.equal(staticWebAppConfig.globalHeaders['Cache-Control'], 'public, max-age=0, must-revalidate');
@@ -38,6 +40,16 @@ test('Azure Static Web Apps response policy protects every response and keeps on
   assert.equal(headersFor('/assets/*')['Cache-Control'], 'public, max-age=31536000, immutable');
   assert.equal(headersFor('/cassette-handoff.webp')['Cache-Control'], 'public, max-age=31536000, immutable');
   assert.equal(headersFor('/sw.js')['Cache-Control'], 'no-cache');
+  assert.deepEqual(staticWebAppConfig.responseOverrides['404'], {
+    rewrite: '/404.html',
+    statusCode: 404,
+  });
+  assert.match(notFoundHtml, /<html lang="en">/);
+  assert.match(notFoundHtml, /<main>/);
+  assert.equal((notFoundHtml.match(/<h1[ >]/g) ?? []).length, 1);
+  assert.match(notFoundHtml, /href="\/not-found\.css"/);
+  assert.match(notFoundCss, /:focus-visible/);
+  assert.match(notFoundCss, /min-height:44px/);
 });
 
 test('release service worker fingerprints the shell and refreshes it before taking control', async () => {
