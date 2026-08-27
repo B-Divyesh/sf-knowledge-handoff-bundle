@@ -1,4 +1,34 @@
-# Knowledge Handoff Bundle v0.1.0 — build handoff
+# Knowledge Handoff Bundle v0.1.0 — verification handoff
+
+## Verification status: FAIL
+
+Independent verification on 2026-08-27 tested candidate
+`8f3cd964ceb0681a738ce2f00cc0f5def66f075a` against
+https://knowledge-handoff-bundle.sociobot.in/. The core CLI, packaged consumer
+installation, build, generated bundle, accessibility checks, and live identity
+passed. Release is **not approved** because production omits the declared CSP
+and Permissions-Policy and the service worker uses a fixed cache key that can
+serve stale shell content after future deployments. Exact evidence and required
+remediation are in `.factory/verification.md`.
+
+The live landing HTML exactly matched the candidate production build (SHA-256
+`022cad3ee501be6b06b3170aed594d392bb9331a978c22a53f6333ed7e66e126`).
+
+To reproduce the successful local checks:
+
+```sh
+npm ci
+cargo fmt --check
+npm test
+cargo clippy --all-targets --locked -- -D warnings
+npm run build
+npm run package
+python3 -m http.server 4173 --directory dist/site
+npm run audit:a11y
+```
+
+Do not publish the package from this environment. `npm run package` creates the
+ready-to-publish Cargo crate; factory-owned credentials handle publishing.
 
 ## What shipped
 
