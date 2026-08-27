@@ -91,6 +91,11 @@ credentials own publication.
 - `node scripts/a11y.mjs https://knowledge-handoff-bundle.sociobot.in` reported
   0 axe violations and 0 serious/critical findings for `/`, `/demo/`,
   `/privacy/`, and `/terms/`.
+- Lighthouse mobile generated a complete report with Performance 99,
+  Accessibility 100, Best Practices 100, SEO 100, LCP 1.50 s, and CLS 0. The
+  runner then reported a Chromium target crash while collecting its final
+  screenshot/BFCache artifact, so this environment returned a nonzero process
+  status after writing the otherwise complete report.
 
 ## Product boundaries / known gaps
 
