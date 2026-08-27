@@ -1,0 +1,38 @@
+project:
+  title: Atlas reporting migration
+  summary: Move weekly reporting from the legacy warehouse without losing audit history.
+  owner:
+    name: Priya Shah
+    contact: priya@example.test
+  prepared_at: 2026-08-27
+  expires_at: 2026-11-27
+sections:
+  - title: Start here
+    artifacts:
+      - id: architecture
+        title: Architecture decision log
+        kind: file
+        path: decisions.md
+        owner: Platform team
+        required: true
+        note: Decisions 14 and 18 explain why the cutover is staged.
+      - id: dashboard
+        title: Migration status dashboard
+        kind: url
+        url: https://example.com/status
+        owner: Priya Shah
+        required: true
+        expires_at: 2026-09-30
+  - title: Operations
+    artifacts:
+      - id: runbook
+        title: Cutover runbook
+        kind: file
+        path: runbook.txt
+        owner: Operations
+        required: true
+gaps:
+  - id: production-access
+    title: Recipient production access is not confirmed
+    owner: Operations
+    next_step: Add the recipient to the deploy group and record a successful read-only login.

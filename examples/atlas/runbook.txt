@@ -1,0 +1,6 @@
+ATLAS CUTOVER RUNBOOK
+
+1. Confirm the final dual-write checksum.
+2. Pause legacy scheduled reports.
+3. Switch the reporting alias.
+4. Run the recipient smoke test.
