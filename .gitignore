@@ -3,4 +3,5 @@
 /dist/
 /site/public/demo/
 /.factory/evidence/
+/graphify-out/
 *.crate
