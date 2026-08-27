@@ -1,6 +1,5 @@
-node_modules/
-dist/
-.env
-*.log
-graphify-out/
-.DS_Store
+/target/
+/node_modules/
+/dist/
+/site/public/demo/
+*.crate

@@ -1,0 +1,36 @@
+[package]
+name = "knowledge-handoff-bundle"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.78"
+description = "Build portable, verifiable knowledge handoff bundles from YAML"
+license = "MIT"
+repository = "https://github.com/B-Divyesh/sf-knowledge-handoff-bundle"
+homepage = "https://knowledge-handoff-bundle.sociobot.in"
+keywords = ["handoff", "knowledge", "cli", "documentation"]
+categories = ["command-line-utilities"]
+readme = "README.md"
+exclude = ["site/", ".factory/", ".github/", "dist/"]
+
+[[bin]]
+name = "khb"
+path = "src/main.rs"
+
+[dependencies]
+chrono = { version = "0.4.38", default-features = false, features = ["clock", "serde"] }
+clap = { version = "4.5.16", features = ["derive"] }
+reqwest = { version = "0.12.7", default-features = false, features = ["blocking", "rustls-tls"] }
+serde = { version = "1.0.209", features = ["derive"] }
+serde_json = "1.0.127"
+serde_yaml = "0.9.34"
+sha2 = "0.10.8"
+url = "2.5.2"
+
+[dev-dependencies]
+tempfile = "3.12.0"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+
