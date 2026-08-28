@@ -1,6 +1,6 @@
 # Knowledge Handoff Bundle — repair handoff
 
-## Release status: ready to deploy
+## Release status: deployed
 
 This repair resolves the release-blocking P1 from independent verification 3
 (`b62ab2fec2ce0e3a2460624997386562a80e1a95`) for candidate
@@ -8,6 +8,11 @@ This repair resolves the release-blocking P1 from independent verification 3
 
 Repair commit: `5143b6cf534f0b00ae3cca4a23b0f2eeede053cc`
 (`fix: fail checked-link builds`).
+
+The final static artifact was deployed to production with Azure Static Web Apps
+(`swa deploy dist/site --app-name sf-knowledge-handoff-bundle --resource-group
+sociobot --env production`). The deployed source revision was
+`8c9ecce17d6a57d3b0b89bccf31644d358b226ea`.
 
 ## What changed
 
@@ -89,11 +94,13 @@ The exact production output was served with Vite preview.
 
 ## Deploy and rerun
 
-The artifact remains a Rust `clap` CLI plus static Vite landing site. Deploy
-the static `dist/site/` output through the existing Azure Static Web Apps
-configuration; `site/public/staticwebapp.config.json` continues to supply the
-strict headers, immutable assets, 404 behavior, and service-worker cache
-policy.
+The artifact remains a Rust `clap` CLI plus static Vite landing site.
+`site/public/staticwebapp.config.json` supplies the strict headers, immutable
+assets, 404 behavior, and service-worker cache policy. After deployment, live
+and local SHA-256 values matched exactly for `index.html`,
+`demo/manifest.json`, `sw.js`, and `cassette-handoff.webp`; the live demo
+manifest hash was
+`e497c091c5e5f6852d5af1390639287d09ea93b54158f0cfcf917ff0f35eafdd`.
 
 ```sh
 npm ci
