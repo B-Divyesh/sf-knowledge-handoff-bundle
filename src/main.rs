@@ -241,6 +241,9 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
             if *check_links {
                 findings.extend(linkcheck::check_links(&handoff).map_err(|e| (3, e))?);
             }
+            let link_errors = findings.iter().any(|finding| {
+                finding.severity == Severity::Error && finding.code.starts_with("link.")
+            });
             let warning_count = findings
                 .iter()
                 .filter(|f| f.severity == Severity::Warning)
@@ -251,7 +254,7 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                 emit(
                     cli.json,
                     "build",
-                    !(cli.ci && (warning_count > 0 || manifest.summary.errors > 0)),
+                    !link_errors && !(cli.ci && warning_count > 0),
                     serde_json::json!({
                         "output": output,
                         "summary": manifest.summary
@@ -266,13 +269,13 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
                     output.display()
                 );
             }
-            Ok(
-                if cli.ci && (warning_count > 0 || manifest.summary.errors > 0) {
-                    2
-                } else {
-                    0
-                },
-            )
+            Ok(if link_errors {
+                3
+            } else if cli.ci && warning_count > 0 {
+                2
+            } else {
+                0
+            })
         }
         Command::Acknowledge {
             manifest,

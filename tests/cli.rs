@@ -1,5 +1,8 @@
 use std::fs;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::process::Command;
+use std::thread;
 
 fn khb() -> Command {
     Command::new(env!("CARGO_BIN_EXE_khb"))
@@ -113,4 +116,76 @@ fn init_refuses_to_overwrite() {
         .unwrap();
     assert_eq!(output.status.code(), Some(4));
     assert_eq!(fs::read_to_string(path).unwrap(), "keep me");
+}
+
+#[test]
+fn build_with_a_broken_checked_link_returns_link_failure() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        for _ in 0..2 {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0; 1024];
+            let read = stream.read(&mut request).unwrap();
+            let request = String::from_utf8_lossy(&request[..read]);
+            let (status, body) = if request.starts_with("GET /robots.txt ") {
+                ("200 OK", "User-agent: *\nAllow: /\n")
+            } else {
+                ("404 Not Found", "not found")
+            };
+            write!(
+                stream,
+                "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            )
+            .unwrap();
+        }
+    });
+
+    let temp = tempfile::tempdir().unwrap();
+    fs::write(
+        temp.path().join("handoff.yaml"),
+        format!(
+            r#"project:
+  title: Atlas
+  summary: Reporting migration
+  owner: {{ name: Priya }}
+  prepared_at: 2026-08-27
+sections:
+  - title: Sources
+    artifacts:
+      - id: status
+        title: Current status
+        kind: url
+        url: http://{address}/missing
+        owner: Priya
+"#
+        ),
+    )
+    .unwrap();
+    let bundle = temp.path().join("bundle");
+    let output = khb()
+        .args([
+            "--json",
+            "build",
+            temp.path().join("handoff.yaml").to_str().unwrap(),
+            "--output",
+            bundle.to_str().unwrap(),
+            "--check-links",
+        ])
+        .output()
+        .unwrap();
+    server.join().unwrap();
+
+    assert_eq!(output.status.code(), Some(3));
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(json["ok"], false);
+    assert_eq!(json["result"]["summary"]["errors"], 1);
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(bundle.join("manifest.json")).unwrap()).unwrap();
+    assert!(manifest["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|finding| finding["code"] == "link.http"));
 }
