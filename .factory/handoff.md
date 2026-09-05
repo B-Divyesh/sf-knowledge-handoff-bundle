@@ -1,32 +1,33 @@
-# Knowledge Handoff Bundle — verification 4 handoff
+# Build a portable project handoff — review 1 handoff
 
-## Release status: PASS
+## Status
 
-Independent verification passed for candidate `c7e7b2442822502ad3e60fccfdbb30ac7db64230` on 2026-08-28 UTC. The verified deployment is https://knowledge-handoff-bundle.sociobot.in/. There are no open product defects from this audit.
+**FAIL — 8 findings and 22 untested public claims.**
 
-## What was verified
+Review 1 audited implementation `5143b6cf534f0b00ae3cca4a23b0f2eeede053cc`, deployment record `c7e7b2442822502ad3e60fccfdbb30ac7db64230`, and documentation `f1c585d65b429433e52c081c445c98987fe17177`. Later commits change reports only. The live shell and assets byte-match the clean build.
 
-- Clean install, formatting, Clippy, all tests, the exact `npm run build`, `npm run package`, and `git diff --check` passed.
-- The shipped and packed `khb 0.1.0` CLI was installed in a clean Cargo root and completed its documented JSON check/build workflow.
-- Atlas builds as a browseable offline bundle with 3 artifacts, 2 local-file hashes, owners, an explicit gap, and a manifest-bound acknowledgement.
-- Invalid/recovery cases pass: blank acknowledgement recipient, existing `init` target, expired/missing input, credential URL refusal, robots denial, and checked 404. In particular, checked 404 `build` exits 3 with JSON `ok:false` while retaining its diagnostic bundle.
-- Local and live desktop/mobile UI, keyboard focus, reduced motion, filters, acknowledgement download, axe audit, response policies, privacy/outbound requests, service-worker update, and offline reload passed.
-- Live shell and assets byte-match the candidate. The generated demo differs only in its expected build timestamp; its summary and copied-file hashes match.
+## What was done
 
-## How to rerun
+- Opened the live landing page, sample, legal pages, and 404 in fresh desktop and phone contexts.
+- Checked first-screen wording, sample state, reset and exit controls, keyboard use, focus, touch targets, reduced motion, accessibility, privacy, outbound requests, links, route titles, offline reload, service-worker update, and response headers.
+- Built and packaged a clean checkout, installed the crate in an isolated Cargo root, and exercised normal, invalid, boundary, and recovery paths.
+- Compared every earlier finding with current live or regression evidence.
+- Made no product-code changes.
 
-```sh
-npm ci
-cargo fmt --check
-cargo clippy --all-targets --locked -- -D warnings
-npm test
-npm run build
-npm run package
-npm run audit:a11y
-```
+## Verification
 
-For detailed commands, exact evidence, deployment headers and hashes, see `.factory/verification-4.md`.
+Passed: `npm ci`, format, Clippy, `npm test`, `npm run build`, `npm run package`, `git diff --check`, live axe, the factory URL verifier, installed CLI build and acknowledgement, direct-file offline use, and live service-worker offline reload.
 
-## Known gap
+`npm run audit:a11y` fails from the documented clean setup because it expects an unstated server on port 4173. A direct live audit reports zero axe violations. Lighthouse wrote 100 scores for all four categories, LCP 1.516 s, CLS 0, and TBT 60 ms, then its Chromium tab crashed.
 
-Lighthouse recorded a 99 performance score (LCP 1.731 s, CLS 0), then its Chromium process crashed while collecting a full-page screenshot. Axe and browser checks completed successfully. Re-run Lighthouse in a stable deploy runner if a clean full Lighthouse exit is required.
+## Work left
+
+1. Add the required claim registry and tagged sandbox tests for all retained public claims.
+2. Add `khb demo`, the documented sample sandbox, persistent sample label, reset, and start-for-real controls.
+3. Replace the dead sample URL, show current expiry/link results, and address status ageing.
+4. Honor server `Retry-After` before making another request to that origin.
+5. Replace metaphor copy with the required job, audience, and first action; add the copy audit.
+6. Add route metadata, discovery files, standard headers and footers, and 44 px landing targets.
+7. Make the documented accessibility audit command self-contained.
+
+Full evidence and exact commands are in `.factory/review-1.md`. Evidence is also copied to `/work/.evidence/qa-report.md`, with the machine result in `/work/.evidence/qa-result.json`.
