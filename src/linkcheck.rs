@@ -1,6 +1,7 @@
 use crate::model::{ArtifactKind, Finding, Handoff, Severity};
+use chrono::{DateTime, Utc};
 use reqwest::blocking::Client;
-use reqwest::header::{HeaderValue, RANGE};
+use reqwest::header::{HeaderValue, RANGE, RETRY_AFTER};
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -18,7 +19,7 @@ pub fn check_links(handoff: &Handoff) -> Result<Vec<Finding>, String> {
         .map_err(|e| e.to_string())?;
     let mut findings = Vec::new();
     let mut robots: HashMap<String, RobotsPolicy> = HashMap::new();
-    let mut last_request: HashMap<String, Instant> = HashMap::new();
+    let mut schedules: HashMap<String, OriginSchedule> = HashMap::new();
 
     for artifact in handoff
         .sections
@@ -36,9 +37,9 @@ pub fn check_links(handoff: &Handoff) -> Result<Vec<Finding>, String> {
         let policy = if let Some(policy) = robots.get(&origin) {
             policy.clone()
         } else {
-            wait_for_origin(&origin, &mut last_request);
-            let policy = fetch_robots(&client, &url);
-            last_request.insert(origin.clone(), Instant::now());
+            wait_for_origin(&origin, &mut schedules);
+            let (policy, retry_after) = fetch_robots(&client, &url);
+            record_request(&origin, retry_after, &mut schedules);
             robots.insert(origin.clone(), policy.clone());
             policy
         };
@@ -53,12 +54,13 @@ pub fn check_links(handoff: &Handoff) -> Result<Vec<Finding>, String> {
             continue;
         }
 
-        wait_for_origin(&origin, &mut last_request);
+        wait_for_origin(&origin, &mut schedules);
         let result = client
             .get(url.clone())
             .header(RANGE, HeaderValue::from_static("bytes=0-0"))
             .send();
-        last_request.insert(origin, Instant::now());
+        let retry_after = result.as_ref().ok().and_then(retry_after);
+        record_request(&origin, retry_after, &mut schedules);
 
         match result {
             Ok(response)
@@ -117,21 +119,22 @@ impl RobotsPolicy {
     }
 }
 
-fn fetch_robots(client: &Client, target: &Url) -> RobotsPolicy {
+fn fetch_robots(client: &Client, target: &Url) -> (RobotsPolicy, Option<Duration>) {
     let mut robots_url = target.clone();
     robots_url.set_path("/robots.txt");
     robots_url.set_query(None);
     robots_url.set_fragment(None);
     let Ok(response) = client.get(robots_url).send() else {
-        return RobotsPolicy::default();
+        return (RobotsPolicy::default(), None);
     };
+    let retry_after = retry_after(&response);
     if !response.status().is_success() {
-        return RobotsPolicy::default();
+        return (RobotsPolicy::default(), retry_after);
     }
     let Ok(body) = response.text() else {
-        return RobotsPolicy::default();
+        return (RobotsPolicy::default(), retry_after);
     };
-    parse_robots(&body)
+    (parse_robots(&body), retry_after)
 }
 
 fn parse_robots(body: &str) -> RobotsPolicy {
@@ -165,13 +168,60 @@ fn parse_robots(body: &str) -> RobotsPolicy {
     policy
 }
 
-fn wait_for_origin(origin: &str, requests: &mut HashMap<String, Instant>) {
-    if let Some(last) = requests.get(origin) {
-        let elapsed = last.elapsed();
-        if elapsed < Duration::from_secs(1) {
-            thread::sleep(Duration::from_secs(1) - elapsed);
+#[derive(Default)]
+struct OriginSchedule {
+    last_request: Option<Instant>,
+    retry_until: Option<Instant>,
+}
+
+fn wait_for_origin(origin: &str, schedules: &mut HashMap<String, OriginSchedule>) {
+    let schedule = schedules.entry(origin.to_owned()).or_default();
+    let one_second_after_last = schedule
+        .last_request
+        .map(|last| last + Duration::from_secs(1));
+    let not_before = match (one_second_after_last, schedule.retry_until) {
+        (Some(rate_limit), Some(retry_after)) => Some(rate_limit.max(retry_after)),
+        (Some(value), None) | (None, Some(value)) => Some(value),
+        (None, None) => None,
+    };
+    if let Some(not_before) = not_before {
+        if let Some(delay) = not_before.checked_duration_since(Instant::now()) {
+            thread::sleep(delay);
         }
     }
+}
+
+fn record_request(
+    origin: &str,
+    retry_after: Option<Duration>,
+    schedules: &mut HashMap<String, OriginSchedule>,
+) {
+    let now = Instant::now();
+    let schedule = schedules.entry(origin.to_owned()).or_default();
+    schedule.last_request = Some(now);
+    if let Some(delay) = retry_after {
+        let retry_until = now + delay;
+        if schedule
+            .retry_until
+            .map_or(true, |current| retry_until > current)
+        {
+            schedule.retry_until = Some(retry_until);
+        }
+    }
+}
+
+fn retry_after(response: &reqwest::blocking::Response) -> Option<Duration> {
+    parse_retry_after(response.headers().get(RETRY_AFTER)?)
+}
+
+fn parse_retry_after(header: &HeaderValue) -> Option<Duration> {
+    let value = header.to_str().ok()?.trim();
+    if let Ok(seconds) = value.parse::<u64>() {
+        return Some(Duration::from_secs(seconds));
+    }
+    DateTime::parse_from_rfc2822(value)
+        .ok()
+        .and_then(|date| (date.with_timezone(&Utc) - Utc::now()).to_std().ok())
 }
 
 #[cfg(test)]
@@ -193,5 +243,15 @@ mod tests {
         );
         assert!(!policy.allows("/archive/item"));
         assert!(policy.allows("/current"));
+    }
+
+    #[test]
+    fn retry_after_parses_seconds_and_http_dates() {
+        let header = HeaderValue::from_static("2");
+        assert_eq!(parse_retry_after(&header), Some(Duration::from_secs(2)));
+        let future = (Utc::now() + chrono::Duration::seconds(3)).to_rfc2822();
+        let parsed = parse_retry_after(&future.parse().unwrap()).unwrap();
+        assert!(parsed >= Duration::from_secs(1));
+        assert!(parsed <= Duration::from_secs(3));
     }
 }

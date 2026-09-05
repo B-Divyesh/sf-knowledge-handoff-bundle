@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://knowledge-handoff-bundle.sociobot.in/sitemap.xml

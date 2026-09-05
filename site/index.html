@@ -3,10 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Turn a YAML checklist into a portable, verifiable project handoff with file hashes, link checks, owners, gaps, and acknowledgement." />
+    <meta name="description" content="Build a portable project handoff from YAML, files, and public links. Show the next owner hashes, owners, link results, and gaps." />
     <meta name="theme-color" content="#f2e8cf" />
-    <title>Knowledge Handoff Bundle — leave the project, not the context</title>
+    <meta property="og:title" content="Knowledge Handoff Bundle — Build project handoffs" />
+    <meta property="og:description" content="Build a portable project handoff from YAML, files, and public links." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://knowledge-handoff-bundle.sociobot.in/" />
+    <meta property="og:image" content="https://knowledge-handoff-bundle.sociobot.in/handoff-preview.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Knowledge Handoff Bundle — Build project handoffs" />
+    <meta name="twitter:description" content="Build a portable project handoff from YAML, files, and public links." />
+    <meta name="twitter:image" content="https://knowledge-handoff-bundle.sociobot.in/handoff-preview.webp" />
+    <title>Knowledge Handoff Bundle — Build project handoffs</title>
+    <link rel="canonical" href="https://knowledge-handoff-bundle.sociobot.in/" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231d1b19'/%3E%3Ccircle cx='30' cy='50' r='13' fill='%23f2e8cf'/%3E%3Ccircle cx='70' cy='50' r='13' fill='%23f2e8cf'/%3E%3Cpath d='M30 50h40' stroke='%23b22e2a' stroke-width='8'/%3E%3C/svg%3E" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -14,63 +25,63 @@
     <header class="site-header">
       <a class="wordmark" href="/" aria-label="Knowledge Handoff Bundle home"><span class="record-dot" aria-hidden="true"></span>KHB / 01</a>
       <nav aria-label="Primary navigation">
-        <a href="#how">How it works</a><a href="#format">The format</a><a class="nav-cta" href="#install">Install</a>
+        <a href="/demo/">Demo</a><a href="#how">How it works</a><a href="/privacy/">Privacy</a><a class="nav-cta" href="#install">Install</a>
       </nav>
     </header>
     <main id="main">
       <section class="hero">
         <div class="hero-copy">
-          <p class="kicker">A durable handoff, not another wiki</p>
-          <h1>Leave the project.<br /><em>Not the context.</em></h1>
-          <p class="lede">Turn one readable YAML file into an offline bundle of source-of-truth files, checked links, accountable owners, expiry warnings, known gaps, and a recipient receipt.</p>
-          <div class="hero-actions"><a class="button primary" href="#install">Build your bundle</a><a class="text-link" href="/demo/">Open the live demo <span aria-hidden="true">↗</span></a></div>
-          <p class="microcopy">Free and open source · No account · No telemetry</p>
+          <p class="kicker">Portable project handoffs</p>
+          <h1>Build a project handoff</h1>
+          <p class="lede">For departing owners and small teams, give the next owner files, link results, owners, and gaps in one portable bundle.</p>
+          <div class="hero-actions"><a class="button primary" href="/demo/">Try it with sample data</a><span class="action-note">Opens a realistic bundle with a broken link and a missing-access gap.</span></div>
+          <div class="hero-actions secondary-action"><a class="text-link" href="#install">Install the CLI</a><span class="action-note">Use your YAML checklist and local files.</span></div>
+          <ul class="facts" aria-label="Product facts"><li>Free under the MIT license</li><li>No account or telemetry</li><li>Built bundles work offline</li></ul>
         </div>
         <figure class="hero-art">
-          <img src="/cassette-handoff.webp" width="1200" height="800" fetchpriority="high" alt="A collage of a cassette whose tape leads to four checked project folders" />
-          <figcaption>One packet. Every track labelled.</figcaption>
+          <img src="/cassette-handoff.webp" width="1200" height="800" fetchpriority="high" alt="A cassette illustration connecting labelled project folders and check marks" />
+          <figcaption>Files, links, owners, and gaps in one bundle.</figcaption>
         </figure>
       </section>
 
-      <section class="problem-band" aria-label="The handoff problem">
-        <p class="side-label">The dropout</p>
-        <blockquote>“I sent the wiki and the drive folder. I thought the rest was obvious.”</blockquote>
-        <p>The next owner should not have to reconstruct which document mattered, which link expired, or who still owes access.</p>
+      <section class="problem-band" aria-labelledby="problem-title">
+        <div><p class="side-label">The problem</p><h2 id="problem-title">Make missing context visible</h2></div>
+        <p>The next owner needs to know which file matters, which link failed, and who still has work to do.</p>
       </section>
 
       <section class="steps" id="how" aria-labelledby="how-title">
-        <div class="section-heading"><p>Side A / workflow</p><h2 id="how-title">Three tracks. One handoff.</h2></div>
+        <div class="section-heading"><p>How it works</p><h2 id="how-title">Create a handoff bundle</h2></div>
         <ol>
-          <li><span>01</span><div><h3>Write the truth down</h3><p>List files, public URLs, owners, expiry dates, and known gaps in a small YAML checklist that belongs in version control.</p></div></li>
-          <li><span>02</span><div><h3>Verify the copy</h3><p>The CLI validates the schema, copies and SHA-256 hashes local files, and can check public links with rate limits and robots controls.</p></div></li>
-          <li><span>03</span><div><h3>Hand over the tape</h3><p>Send one static directory. The recipient can browse it offline, mark reviewed items, and export a receipt tied to the manifest hash.</p></div></li>
+          <li><span>01</span><div><h3>List the source of truth</h3><p>Add files, public links, owners, expiry dates, and known gaps to a YAML checklist in version control.</p></div></li>
+          <li><span>02</span><div><h3>Build and check it</h3><p>The CLI copies local files, records SHA-256 hashes, and checks public links only when you ask.</p></div></li>
+          <li><span>03</span><div><h3>Send the bundle</h3><p>The next owner opens one static folder, reviews artifacts, and exports an acknowledgement tied to the manifest.</p></div></li>
         </ol>
       </section>
 
       <section class="format" id="format" aria-labelledby="format-title">
-        <div class="format-copy"><p class="kicker">Side B / transparent by design</p><h2 id="format-title">Readable after the tool is gone.</h2><p>The bundle is ordinary HTML, JSON, CSS, JavaScript, and copied files. There is no proprietary database, hosted account, or runtime dependency.</p><ul><li>Local files copied and SHA-256 hashed</li><li>Public links checked only when requested</li><li>Credential-like URLs blocked before output</li><li>Owners, expiry, and gaps stay first-class</li></ul></div>
-        <div class="manifest-card" aria-label="Example manifest structure"><div class="card-label"><span>MANIFEST.JSON</span><span>WRITE-ONCE COPY</span></div><pre tabindex="0" aria-label="Example manifest JSON"><code>{
+        <div class="format-copy"><p class="kicker">Bundle contents</p><h2 id="format-title">Use files you can inspect</h2><p>The bundle contains ordinary HTML, JSON, CSS, JavaScript, and copied files. It does not need a hosted database or account.</p><ul><li>Copied files include SHA-256 hashes</li><li>Public links are checked only on request</li><li>Credential-like URLs stop before output</li><li>Owners, expiry dates, and gaps remain visible</li></ul></div>
+        <div class="manifest-card" aria-label="Example manifest structure"><div class="card-label"><span>MANIFEST.JSON</span><span>PORTABLE FORMAT</span></div><pre tabindex="0" aria-label="Example manifest JSON"><code>{
   "format": "knowledge-handoff-bundle/1",
   "project": { "title": "Atlas migration" },
   "summary": {
-    "artifacts": 3,
-    "verified": 2,
+    "artifacts": 4,
+    "verified": 3,
     "gaps": 1
   }
 }</code></pre><span class="verified-stamp">✓ VERIFIED</span></div>
       </section>
 
       <section class="install" id="install" aria-labelledby="install-title">
-        <div class="section-heading"><p>Record your copy</p><h2 id="install-title">From checklist to bundle.</h2></div>
-        <div class="terminal" aria-label="Installation and usage commands"><div class="terminal-label"><span>SHELL / 01</span><span>EXIT 0</span></div><pre tabindex="0" aria-label="Install and build commands"><code><span class="prompt">$</span> cargo install --git https://github.com/B-Divyesh/sf-knowledge-handoff-bundle
+        <div class="section-heading"><p>Install</p><h2 id="install-title">Run the CLI</h2></div>
+        <div class="terminal" aria-label="Installation and usage commands"><div class="terminal-label"><span>SHELL</span><span>EXIT 0</span></div><pre tabindex="0" aria-label="Install and build commands"><code><span class="prompt">$</span> git clone https://github.com/B-Divyesh/sf-knowledge-handoff-bundle
+<span class="prompt">$</span> cd sf-knowledge-handoff-bundle &amp;&amp; cargo install --path .
 <span class="prompt">$</span> khb init handoff.yaml
-<span class="prompt">$</span> khb check handoff.yaml
-<span class="prompt">$</span> khb build handoff.yaml --output ./bundle --check-links</code></pre><button class="copy-button" type="button" data-copy="cargo install --git https://github.com/B-Divyesh/sf-knowledge-handoff-bundle" aria-describedby="copy-status">Copy install command</button><span id="copy-status" class="copy-status" aria-live="polite"></span></div>
-        <div class="install-actions"><a class="button primary" href="/demo/">Browse a real generated bundle</a><a class="text-link" href="https://github.com/B-Divyesh/sf-knowledge-handoff-bundle">Read the source on GitHub <span aria-hidden="true">↗</span></a></div>
+<span class="prompt">$</span> khb build handoff.yaml --output ./bundle --check-links</code></pre><button class="copy-button" type="button" data-copy="git clone https://github.com/B-Divyesh/sf-knowledge-handoff-bundle" aria-describedby="copy-status">Copy clone command</button><span id="copy-status" class="copy-status" aria-live="polite"></span></div>
+        <div class="install-actions"><a class="button primary" href="/demo/">Try it with sample data</a><a class="text-link" href="https://github.com/B-Divyesh/sf-knowledge-handoff-bundle">Read the source on GitHub <span aria-hidden="true">↗</span></a></div>
       </section>
 
-      <section class="principles" aria-labelledby="principles-title"><div><p class="kicker">The fine print</p><h2 id="principles-title">Trust comes from limits.</h2></div><div class="principle-grid"><article><h3>No secret fetching</h3><p>Authenticated URLs are never fetched or embedded. Credential-like query parameters stop the build.</p></article><article><h3>No invisible traffic</h3><p>Link checking is opt-in, one request per origin per second, with a named user agent and robots awareness.</p></article><article><h3>No hidden cloud</h3><p>The generated site works from disk. Review progress remains local and exports as a plain JSON receipt.</p></article></div></section>
+      <section class="principles" aria-labelledby="limits-title"><div><p class="kicker">Privacy and limits</p><h2 id="limits-title">What the tool does not do</h2></div><div class="principle-grid"><article><h3>It does not fetch secrets</h3><p>Authenticated URLs are not fetched or written to output. Credential-like query parameters stop the build.</p></article><article><h3>It does not crawl sites</h3><p>Link checks use the listed URLs and each origin’s robots.txt. They wait between requests from one origin.</p></article><article><h3>It does not host your bundle</h3><p>The generated site works from disk. Review progress stays in the recipient browser and exports as local JSON.</p></article></div></section>
     </main>
-    <footer class="site-footer"><div><a class="wordmark" href="/"><span class="record-dot" aria-hidden="true"></span>KHB / 01</a><p>Make the missing context visible.</p></div><nav aria-label="Footer"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-knowledge-handoff-bundle">GitHub</a></nav><p class="copyright">MIT · © 2026 Sociobot</p></footer>
+    <footer class="site-footer"><div><a class="wordmark" href="/"><span class="record-dot" aria-hidden="true"></span>KHB / 01</a><p>Build a portable project handoff.</p></div><nav aria-label="Footer"><a href="/demo/">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-knowledge-handoff-bundle">GitHub</a></nav><p class="copyright">Built by Param Factory · v0.1.0</p></footer>
   </body>
 </html>

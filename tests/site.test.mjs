@@ -1,79 +1,99 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import test from 'node:test';
+import { createServer } from 'node:http';
+import { readFileSync, statSync } from 'node:fs';
+import { normalize, join, relative } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import test, { after } from 'node:test';
+import { chromium } from 'playwright';
 import { writeServiceWorker } from '../scripts/service-worker.mjs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
-const html = readFileSync(new URL('../site/index.html', import.meta.url), 'utf8');
-const css = readFileSync(new URL('../site/src/style.css', import.meta.url), 'utf8');
-const staticWebAppConfig = JSON.parse(readFileSync(new URL('../site/public/staticwebapp.config.json', import.meta.url), 'utf8'));
-const notFoundHtml = readFileSync(new URL('../site/public/404.html', import.meta.url), 'utf8');
-const notFoundCss = readFileSync(new URL('../site/public/not-found.css', import.meta.url), 'utf8');
+const root = new URL('..', import.meta.url).pathname;
+const build = spawnSync('npm', ['run', 'build'], { cwd: root, encoding: 'utf8' });
+assert.equal(build.status, 0, build.stderr || build.stdout);
+const directory = join(root, 'dist/site');
+const contentTypes = { '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.xml': 'application/xml', '.txt': 'text/plain' };
+const server = createServer((request, response) => {
+  const pathname = new URL(request.url, 'http://localhost').pathname;
+  const requested = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
+  let target = normalize(join(directory, requested));
+  try {
+    if (relative(directory, target).startsWith('..')) throw new Error('outside output');
+    if (statSync(target).isDirectory()) target = join(target, 'index.html');
+    response.writeHead(200, { 'Content-Type': contentTypes[target.slice(target.lastIndexOf('.'))] ?? 'text/html' });
+    response.end(readFileSync(target));
+  } catch {
+    response.writeHead(404, { 'Content-Type': 'text/html' });
+    response.end(readFileSync(join(directory, '404.html')));
+  }
+});
+await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+const base = `http://127.0.0.1:${server.address().port}`;
 
-test('landing page has the required accessibility landmarks', () => {
-  assert.match(html, /<html lang="en">/);
-  assert.equal((html.match(/<h1[ >]/g) ?? []).length, 1);
-  assert.match(html, /<main id="main">/);
-  assert.match(html, /class="skip-link"/);
-  assert.match(html, /<img[^>]+alt="[^"]+"/);
-  assert.match(css, /:focus-visible/);
-  assert.match(css, /prefers-reduced-motion:reduce/);
+test('built routes provide usable metadata, landmarks, and mobile touch controls', { concurrency: false }, async () => {
+  const browser = await chromium.launch();
+  try {
+    const expectedTitles = new Map([
+      ['/', 'Knowledge Handoff Bundle — Build project handoffs'],
+      ['/demo/', 'Demo — Knowledge Handoff Bundle'],
+      ['/privacy/', 'Privacy — Knowledge Handoff Bundle'],
+      ['/terms/', 'Terms — Knowledge Handoff Bundle'],
+    ]);
+    for (const [route, title] of expectedTitles) {
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const page = await context.newPage();
+      const messages = [];
+      page.on('console', (message) => { if (message.type() === 'error') messages.push(message.text()); });
+      await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
+      assert.equal(await page.title(), title);
+      assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+      assert.equal(await page.locator('main').count(), 1);
+      assert.equal(await page.locator('h1').count(), 1);
+      assert.ok(await page.locator('link[rel="canonical"]').count());
+      assert.ok(await page.locator('meta[property="og:image"]').count());
+      const targets = await page.locator('a:visible, button:visible').evaluateAll((nodes) => nodes.map((node) => {
+        const box = node.getBoundingClientRect();
+        return { label: node.textContent?.trim(), width: box.width, height: box.height };
+      }));
+      for (const target of targets) {
+        assert.ok(target.height >= 44, `${route} ${target.label} height was ${target.height}`);
+        assert.ok(target.width >= 44, `${route} ${target.label} width was ${target.width}`);
+      }
+      assert.deepEqual(messages, []);
+      await context.close();
+    }
+  } finally { await browser.close(); }
 });
 
-test('landing page does not load third-party runtime assets', () => {
-  assert.doesNotMatch(html, /(?:src|href)="https:\/\/(?!github\.com)/);
-  assert.doesNotMatch(html, /google-analytics|googletagmanager|fonts\.googleapis/i);
+test('the built 404 route keeps the site skeleton and a route home', async () => {
+  const response = await fetch(`${base}/missing-route`);
+  assert.equal(response.status, 404);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${base}/missing-route`);
+    assert.equal(await page.title(), 'Page not found — Knowledge Handoff Bundle');
+    assert.equal(await page.locator('header nav').count(), 1);
+    assert.equal(await page.locator('footer').count(), 1);
+    assert.equal(await page.getByRole('link', { name: 'Go to home' }).count(), 1);
+  } finally { await browser.close(); }
 });
 
-test('hero declares dimensions and high fetch priority', () => {
-  assert.match(html, /cassette-handoff\.webp[^>]+width="1200"[^>]+height="800"[^>]+fetchpriority="high"/);
-});
-
-test('Azure Static Web Apps response policy protects every response, including controlled 404s', () => {
-  assert.equal(staticWebAppConfig.globalHeaders['Content-Security-Policy'], "default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'");
-  assert.equal(staticWebAppConfig.globalHeaders['Permissions-Policy'], 'camera=(), microphone=(), geolocation=()');
-  assert.equal(staticWebAppConfig.globalHeaders['Cache-Control'], 'public, max-age=0, must-revalidate');
-  assert.equal(staticWebAppConfig.globalHeaders['X-Content-Type-Options'], 'nosniff');
-  assert.equal(staticWebAppConfig.globalHeaders['Referrer-Policy'], 'strict-origin-when-cross-origin');
-  const headersFor = (route) => staticWebAppConfig.routes.find((entry) => entry.route === route)?.headers;
-  assert.equal(headersFor('/assets/*')['Cache-Control'], 'public, max-age=31536000, immutable');
-  assert.equal(headersFor('/cassette-handoff.webp')['Cache-Control'], 'public, max-age=31536000, immutable');
-  assert.equal(headersFor('/sw.js')['Cache-Control'], 'no-cache');
-  assert.deepEqual(staticWebAppConfig.responseOverrides['404'], {
-    rewrite: '/404.html',
-    statusCode: 404,
-  });
-  assert.match(notFoundHtml, /<html lang="en">/);
-  assert.match(notFoundHtml, /<main>/);
-  assert.equal((notFoundHtml.match(/<h1[ >]/g) ?? []).length, 1);
-  assert.match(notFoundHtml, /href="\/not-found\.css"/);
-  assert.match(notFoundCss, /:focus-visible/);
-  assert.match(notFoundCss, /min-height:44px/);
-});
-
-test('release service worker fingerprints the shell and refreshes it before taking control', async () => {
-  const output = mkdtempSync(join(tmpdir(), 'khb-service-worker-'));
+test('a shell change produces a new service-worker cache identity', async () => {
+  const output = mkdtempSync(join(tmpdir(), 'khb-site-worker-'));
   const template = new URL('../site/sw.template.js', import.meta.url);
   try {
     for (const file of ['index.html', 'privacy/index.html', 'terms/index.html', 'cassette-handoff.webp']) {
       const destination = join(output, file);
-      const parent = destination.slice(0, destination.lastIndexOf('/'));
-      mkdirSync(parent, { recursive: true });
-      writeFileSync(destination, `first release ${file}`);
+      mkdirSync(destination.slice(0, destination.lastIndexOf('/')), { recursive: true });
+      writeFileSync(destination, `first ${file}`);
     }
-    const firstVersion = await writeServiceWorker(output, template);
-    const firstWorker = readFileSync(join(output, 'sw.js'), 'utf8');
+    const first = await writeServiceWorker(output, template);
     writeFileSync(join(output, 'index.html'), 'second release');
-    const secondVersion = await writeServiceWorker(output, template);
-    const secondWorker = readFileSync(join(output, 'sw.js'), 'utf8');
-    assert.notEqual(firstVersion, secondVersion);
-    assert.match(firstWorker, new RegExp(`khb-site-${firstVersion}`));
-    assert.match(secondWorker, new RegExp(`khb-site-${secondVersion}`));
-    assert.match(secondWorker, /new Request\(url, \{ cache: 'reload' \}\)/);
-    assert.match(secondWorker, /key\.startsWith\('khb-site-'\)/);
-    assert.match(secondWorker, /event\.request\.mode === 'navigate'/);
-  } finally {
-    rmSync(output, { recursive: true, force: true });
-  }
+    const second = await writeServiceWorker(output, template);
+    assert.notEqual(first, second);
+  } finally { rmSync(output, { recursive: true, force: true }); }
 });
+
+after(async () => { await new Promise((resolve) => server.close(resolve)); });

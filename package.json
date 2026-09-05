@@ -8,8 +8,9 @@
     "build:site": "vite build",
     "build:demo": "sh scripts/build-demo.sh",
     "build": "cargo build --release --locked && npm run build:demo && npm run build:site",
-    "test": "cargo test --locked && node --test tests/*.test.mjs",
-    "audit:a11y": "node scripts/a11y.mjs http://127.0.0.1:4173",
+    "test": "cargo test --locked && node --test tests/bundle-ui.test.mjs tests/site.test.mjs && npm run test:claims -- --test-name-pattern @claim:.*",
+    "audit:a11y": "node scripts/a11y.mjs",
+    "test:claims": "cargo build --locked && node scripts/run-claim.mjs",
     "package": "cargo package --locked --allow-dirty"
   },
   "devDependencies": {

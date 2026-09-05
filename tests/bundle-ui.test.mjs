@@ -46,7 +46,7 @@ test('generated artifact actions are at least 44 CSS pixels tall at 390px and de
         const box = node.getBoundingClientRect();
         return { label: node.textContent?.trim(), height: box.height, width: box.width };
       }));
-      assert.equal(links.length, 3);
+      assert.equal(links.length, 4);
       for (const link of links) {
         assert.ok(link.height >= 44, `${viewport.width}px ${link.label} height was ${link.height}px`);
         assert.ok(link.width >= 44, `${viewport.width}px ${link.label} width was ${link.width}px`);

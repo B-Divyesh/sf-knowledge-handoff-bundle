@@ -10,4 +10,5 @@ if [ ! -x "$binary" ]; then
   exit 1
 fi
 
-"$binary" build "$root_dir/examples/atlas/handoff.yaml" --output "$output" --force
+"$binary" demo --output "$output" --force
+node "$root_dir/scripts/mark-demo.mjs" "$output/index.html"

@@ -3,6 +3,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::process::Command;
 use std::thread;
+use std::time::{Duration, Instant};
 
 fn khb() -> Command {
     Command::new(env!("CARGO_BIN_EXE_khb"))
@@ -188,4 +189,84 @@ sections:
         .unwrap()
         .iter()
         .any(|finding| finding["code"] == "link.http"));
+}
+
+#[test]
+fn link_checker_honors_retry_after_before_the_next_request() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        let mut events = Vec::new();
+        for _ in 0..3 {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0; 1024];
+            let read = stream.read(&mut request).unwrap();
+            let request = String::from_utf8_lossy(&request[..read]);
+            let path = request.split_whitespace().nth(1).unwrap_or("/").to_string();
+            events.push((path.clone(), Instant::now()));
+            let (status, headers, body) = match path.as_str() {
+                "/robots.txt" => ("200 OK", "", "User-agent: *\nAllow: /\n"),
+                "/first" => ("429 Too Many Requests", "Retry-After: 2\r\n", "slow down"),
+                _ => ("200 OK", "", "ok"),
+            };
+            write!(
+                stream,
+                "HTTP/1.1 {status}\r\n{headers}Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            )
+            .unwrap();
+        }
+        events
+    });
+
+    let temp = tempfile::tempdir().unwrap();
+    fs::write(
+        temp.path().join("handoff.yaml"),
+        format!(
+            r#"project:
+  title: Atlas
+  summary: Reporting migration
+  owner: {{ name: Priya }}
+  prepared_at: 2026-09-05
+sections:
+  - title: Sources
+    artifacts:
+      - {{ id: first, title: First source, kind: url, url: http://{address}/first, owner: Priya }}
+      - {{ id: second, title: Second source, kind: url, url: http://{address}/second, owner: Priya }}
+"#
+        ),
+    )
+    .unwrap();
+    let output = khb()
+        .args([
+            "--json",
+            "check",
+            temp.path().join("handoff.yaml").to_str().unwrap(),
+            "--check-links",
+        ])
+        .output()
+        .unwrap();
+    let events = server.join().unwrap();
+
+    assert_eq!(output.status.code(), Some(3));
+    let first = events.iter().find(|(path, _)| path == "/first").unwrap().1;
+    let second = events.iter().find(|(path, _)| path == "/second").unwrap().1;
+    assert!(
+        second.duration_since(first) >= Duration::from_millis(1900),
+        "second request ignored Retry-After"
+    );
+}
+
+#[test]
+fn demo_builds_the_shipped_sample_in_a_temporary_directory() {
+    let output = khb().args(["--json", "demo"]).output().unwrap();
+    assert!(output.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let output_dir = json["result"]["output"].as_str().unwrap();
+    assert!(std::path::Path::new(output_dir)
+        .join("index.html")
+        .is_file());
+    assert_eq!(json["result"]["sample"], true);
+    assert_eq!(json["result"]["summary"]["artifacts"], 4);
+    assert_eq!(json["result"]["summary"]["errors"], 1);
 }

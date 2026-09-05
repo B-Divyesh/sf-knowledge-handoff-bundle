@@ -160,6 +160,10 @@ fn artifact_status(kind: &ArtifactKind, findings: &[&Finding]) -> (String, Strin
     }
     match kind {
         ArtifactKind::File => ("verified".into(), "Copied and SHA-256 hashed".into()),
+        ArtifactKind::Url if findings.iter().any(|f| f.code == "link.demo_ok") => (
+            "verified".into(),
+            "Recorded sample check: reachable (HTTP 200)".into(),
+        ),
         ArtifactKind::Url if findings.iter().any(|f| f.code == "link.ok") => {
             ("verified".into(), "Public link reached during build".into())
         }
@@ -188,12 +192,12 @@ fn render_html(manifest: &Manifest, manifest_hash: &str) -> Result<String, Strin
         r##"<!doctype html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Portable project handoff for {title}"><title>{title} — Knowledge handoff</title><link rel="stylesheet" href="assets/bundle.css"><script defer src="assets/bundle.js"></script></head>
 <body><a class="skip" href="#main">Skip to handoff</a><header class="tape-head"><span>KHB // recipient copy</span><span>Generated {date}</span></header>
-<main id="main"><section class="cover"><p class="eyebrow">Project handoff · source-of-truth bundle</p><h1>{title}</h1><p class="summary">{summary}</p><dl class="owner"><div><dt>Prepared by</dt><dd>{owner}</dd></div><div><dt>Prepared</dt><dd>{prepared}</dd></div><div><dt>Bundle health</dt><dd>{health}</dd></div></dl></section>
-<section aria-labelledby="contents"><div class="section-title"><p>Side A</p><h2 id="contents">Artifact tracklist</h2></div><div class="filters" role="group" aria-label="Filter artifacts"><button class="filter active" type="button" data-filter="all" aria-pressed="true">All</button><button class="filter" type="button" data-filter="required" aria-pressed="false">Required</button><button class="filter" type="button" data-filter="attention" aria-pressed="false">Needs attention</button></div><div id="artifact-list"></div><p class="empty" id="filter-empty" hidden>No tracks match this filter.</p></section>
-<section aria-labelledby="gaps"><div class="section-title"><p>Side B</p><h2 id="gaps">Known gaps</h2></div><div id="gap-list"></div></section>
-<section class="ack" aria-labelledby="ack-title"><div class="section-title"><p>Dub copy</p><h2 id="ack-title">Acknowledge receipt</h2></div><p>Mark each artifact you reviewed, then export a receipt. Review state stays in this browser.</p><label for="recipient">Recipient name</label><input id="recipient" autocomplete="name" required><label for="ack-note">Note (optional)</label><textarea id="ack-note" rows="3"></textarea><button class="primary" id="export" type="button">Export acknowledgement</button><p id="ack-status" class="status-line" aria-live="polite"></p></section>
+<main id="main"><section class="cover"><p class="eyebrow">Project handoff · source-of-truth bundle</p><h1>{title}</h1><p class="summary">{summary}</p><dl class="owner"><div><dt>Prepared by</dt><dd>{owner}</dd></div><div><dt>Prepared</dt><dd>{prepared}</dd></div><div><dt>Bundle health</dt><dd id="bundle-health">{health}</dd></div></dl></section>
+<section aria-labelledby="contents"><div class="section-title"><p>Contents</p><h2 id="contents">Artifacts</h2></div><div class="filters" role="group" aria-label="Filter artifacts"><button class="filter active" type="button" data-filter="all" aria-pressed="true">All</button><button class="filter" type="button" data-filter="required" aria-pressed="false">Required</button><button class="filter" type="button" data-filter="attention" aria-pressed="false">Needs attention</button></div><div id="artifact-list"></div><p class="empty" id="filter-empty" hidden>No artifacts match this filter.</p></section>
+<section aria-labelledby="gaps"><div class="section-title"><p>Follow-up</p><h2 id="gaps">Known gaps</h2></div><div id="gap-list"></div></section>
+<section class="ack" aria-labelledby="ack-title"><div class="section-title"><p>Recipient review</p><h2 id="ack-title">Export acknowledgement</h2></div><p>Mark each artifact you reviewed, then export a receipt. Review state stays in this browser.</p><label for="recipient">Recipient name</label><input id="recipient" autocomplete="name" required><label for="ack-note">Note (optional)</label><textarea id="ack-note" rows="3"></textarea><button class="primary" id="export" type="button">Export acknowledgement</button><p id="ack-status" class="status-line" aria-live="polite"></p></section>
 <noscript><p class="noscript">JavaScript is off. The immutable manifest remains available at <a href="manifest.json">manifest.json</a>; use <code>khb acknowledge</code> to export a receipt.</p></noscript></main>
-<footer><p>Portable by design · no network, no tracking</p><a href="manifest.json">Open manifest.json</a></footer><script type="application/json" id="manifest">{data}</script><div id="bundle-meta" data-hash="{manifest_hash}"></div></body></html>"##,
+<footer><p>Portable bundle · no hosted runtime or tracking</p><a href="manifest.json">Open manifest.json</a></footer><script type="application/json" id="manifest">{data}</script><div id="bundle-meta" data-hash="{manifest_hash}"></div></body></html>"##,
         date = escape(&manifest.generated_at[..10]),
         summary = escape(&manifest.project.summary),
         owner = escape(&manifest.project.owner.name),

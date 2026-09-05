@@ -1,4 +1,5 @@
 mod bundle;
+mod demo;
 mod linkcheck;
 mod model;
 mod validate;
@@ -89,6 +90,15 @@ enum Command {
         #[arg(long)]
         check_links: bool,
         /// Replace a non-empty output directory
+        #[arg(long)]
+        force: bool,
+    },
+    /// Build the bundled sample handoff in a temporary directory
+    Demo {
+        /// Write the sample bundle to this directory instead of a temporary directory
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Replace a non-empty output directory when --output is used
         #[arg(long)]
         force: bool,
     },
@@ -276,6 +286,29 @@ fn run(cli: &Cli) -> Result<u8, (u8, String)> {
             } else {
                 0
             })
+        }
+        Command::Demo { output, force } => {
+            let (destination, manifest) =
+                demo::build_demo(output.as_deref(), *force).map_err(|error| (4, error))?;
+            if cli.json {
+                emit(
+                    cli.json,
+                    "demo",
+                    true,
+                    serde_json::json!({
+                        "output": destination,
+                        "summary": manifest.summary,
+                        "sample": true
+                    }),
+                )?;
+            } else {
+                println!(
+                    "Sample bundle written to {}. Open {}/index.html.",
+                    destination.display(),
+                    destination.display()
+                );
+            }
+            Ok(0)
         }
         Command::Acknowledge {
             manifest,

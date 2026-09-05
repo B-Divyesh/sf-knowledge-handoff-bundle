@@ -41,6 +41,8 @@ Only state changes move. On load, the hero cassette settles by 8 px over 240 ms;
 ## Original asset plan and provenance
 
 - `site/public/cassette-handoff.webp`: generated specifically for this product using the factory image generator (`/opt/fleet/lib/gen-image.sh`, factory-image deployment). Prompt: “Editorial still-life illustration for a CLI product landing page: a well-used transparent compact cassette on warm cream photocopy paper, its two reels connected by a dark tape path that becomes neatly labelled file tabs and check marks; late-1980s independent zine cut-paper collage, chunky black ink outlines, visible halftone and misregistration, limited warm cream / soot black / brick red / deep teal palette, landscape composition with subject on right and quiet negative space on left, tactile but legible, no words, no letters, no logos, no watermark.” Generated output is converted to WebP and kept below 300 KB. License: project-original generated asset, 2026.
+- `site/public/handoff-preview.webp`: a 1200×630 center crop of the project-original cassette artwork, made locally with ImageMagick for Open Graph and Twitter previews. It adds no text or third-party asset. License: derivative of the project-original generated asset, 2026.
+- `site/public/apple-touch-icon.png`: a 180×180 center crop of the same project-original cassette artwork, made locally with ImageMagick for saved-site icons. License: derivative of the project-original generated asset, 2026.
 - All interface marks (status squares, tape holes, arrows) are CSS shapes or Unicode glyphs authored in-repository; no third-party icon set.
 
 ## Accessibility and performance intent

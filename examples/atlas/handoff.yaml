@@ -4,8 +4,8 @@ project:
   owner:
     name: Priya Shah
     contact: priya@example.test
-  prepared_at: 2026-08-27
-  expires_at: 2026-11-27
+  prepared_at: 2026-09-05
+  expires_at: 2026-12-05
 sections:
   - title: Start here
     artifacts:
@@ -16,13 +16,21 @@ sections:
         owner: Platform team
         required: true
         note: Decisions 14 and 18 explain why the cutover is staged.
-      - id: dashboard
-        title: Migration status dashboard
+      - id: release-notes
+        title: Warehouse release notes
         kind: url
-        url: https://example.com/status
+        url: https://www.rfc-editor.org/rfc/rfc9110.html
         owner: Priya Shah
         required: true
-        expires_at: 2026-09-30
+        note: The public protocol reference used in the migration decision.
+      - id: legacy-dashboard
+        title: Legacy migration dashboard
+        kind: url
+        url: https://status.example.invalid/atlas-migration
+        owner: Priya Shah
+        required: true
+        expires_at: 2026-09-12
+        note: This sample intentionally records a broken link for the recipient to replace.
   - title: Operations
     artifacts:
       - id: runbook
