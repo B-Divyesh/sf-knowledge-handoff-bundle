@@ -11,8 +11,8 @@ deployment verification remains outstanding.
 - Implementation: `788c736e922336f4078b5c0bb1242ef5f40a8801`
   (`fix: complete demo sandbox and claim coverage`)
 - Earlier review documentation: `a2b8b13ce26d37f7ac2bb2d0c844e59db5cc66ed`
-- This verification handoff SHA: recorded in the follow-up documentation
-  commit so it can be kept separate from the implementation.
+- Verification documentation: `ae3d0a4c9c29a98fa81b9c02d34562a7b42acb5e`
+  (`docs: record repair verification`), separate from the implementation.
 
 ## What changed
 
