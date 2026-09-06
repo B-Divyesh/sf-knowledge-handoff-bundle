@@ -1,10 +1,12 @@
-# Build a portable project handoff — repair 4 handoff
+# Build a portable project handoff — verification 5 handoff
 
 ## Status
 
-The repair implementation is ready and its repository CI passed. The HTTPS
-site was still serving the previous August build at the final check, so live
-deployment verification remains outstanding.
+**PASS — independent verification 5 found 0 findings and 0 untested claims.**
+
+The repaired implementation is deployed and byte-matches the clean candidate
+for the site shell and assets. The live desktop, phone, demo, legal, missing
+route, accessibility, privacy, update/offline, and installed-CLI paths pass.
 
 ## Release identity
 
@@ -13,6 +15,8 @@ deployment verification remains outstanding.
 - Earlier review documentation: `a2b8b13ce26d37f7ac2bb2d0c844e59db5cc66ed`
 - Verification documentation: `ae3d0a4c9c29a98fa81b9c02d34562a7b42acb5e`
   (`docs: record repair verification`), separate from the implementation.
+- Documentation candidate independently reviewed: `cf9c00699bfb11f63132e7dfee0e8cfa106385ab`.
+- Final QA report: `.factory/verification-5.md`.
 
 ## What changed
 
@@ -80,18 +84,33 @@ on the landing, demo, legal, 404, and unknown-route pages. `npm run package`
 created and verified the publishable Cargo package. An isolated Cargo install
 of that package successfully ran `khb --json demo`.
 
-## Deployment and remaining work
+## Independent verification 5
 
-Repository CI for the implementation succeeded. At the final HTTPS check,
-`https://knowledge-handoff-bundle.sociobot.in` returned the old title
-“Knowledge Handoff Bundle — leave the project, not the context” and a
-28 August 2026 `Last-Modified` value. This does not match implementation
-`788c736`. No deploy workflow or durable product deployment command exists in
-this repository, and no infrastructure was changed.
+From a clean checkout, all documented quality gates and all 25 claim commands
+passed. The Cargo package was installed into a new consumer root; its isolated
+`khb --json demo`, acknowledgement, invalid-input, and overwrite-recovery paths
+passed. The installed demo also ran from `file://` while offline.
 
-Release the already-pushed implementation through the factory’s normal static
-deployment path, then re-run a fresh desktop and phone browser check against
-the HTTPS origin. The expected first screen states the job (build a project
-handoff), audience (departing owners and small teams handing work to the next
-owner), and first action (Try it with sample data). The product is free under
-MIT; no billing offer or external provider is required.
+Fresh 1366 × 900 and 390 × 844 live sessions confirmed the job, audience, and
+`Try it with sample data` action before scrolling. The populated demo has four
+artifacts, recorded reachable and broken outcomes, a current expiry warning, a
+known gap, the sticky sample label, demo-only state, Reset demo, and Start for
+real. Keyboard, focus, 44 px targets, reduced motion, route titles, legal pages,
+the designed 404, privacy request capture, service-worker update/offline reload,
+and acknowledgement export passed. Live Axe found zero violations.
+
+The live shell and static assets byte-match the candidate build. The demo
+manifest substantively matches after excluding its expected generation time.
+Repository CI is successful for implementation `788c736` and documentation
+`cf9c006`. A fresh Lighthouse run scored 96 Performance and 100 for
+Accessibility, Best Practices, and SEO; LCP was 1.505 s and CLS was 0.
+
+Evidence and full earlier-finding dispositions are in
+`.factory/verification-5.md`. Copies required by the worker are at
+`/work/.evidence/qa-report.md` and `/work/.evidence/qa-result.json`.
+
+## Known gaps and next steps
+
+No product or verification gap remains. No deployment, infrastructure, secret,
+or product-code change was made by the verifier. The factory can promote the
+already-deployed candidate without further repair.
