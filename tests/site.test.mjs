@@ -95,6 +95,24 @@ test('the desktop demo exposes one banner landmark', async () => {
   } finally { await browser.close(); }
 });
 
+test('all site routes reflow without horizontal scrolling at 200 percent text size', async () => {
+  const browser = await chromium.launch();
+  try {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    for (const route of ['/', '/demo/', '/privacy/', '/terms/', '/404.html']) {
+      await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
+      await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        true,
+        `${route} overflowed at 200% text size`,
+      );
+    }
+    await context.close();
+  } finally { await browser.close(); }
+});
+
 test('a shell change produces a new service-worker cache identity', async () => {
   const output = mkdtempSync(join(tmpdir(), 'khb-site-worker-'));
   const template = new URL('../site/sw.template.js', import.meta.url);

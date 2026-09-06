@@ -6,6 +6,7 @@
 - Remove a duplicate desktop banner landmark from the website demo.
 - Test both user-info and credential-query URL rejection before fetch or output.
 - Move keyboard focus to page content when a skip link is activated.
+- Reflow landing, bundle, legal, and 404 pages without horizontal scrolling at 200% text size.
 
 ## 0.1.0 — 2026-08-27
 
