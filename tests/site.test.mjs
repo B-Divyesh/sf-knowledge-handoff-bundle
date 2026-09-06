@@ -52,6 +52,10 @@ test('built routes provide usable metadata, landmarks, and mobile touch controls
       assert.equal(await page.locator('h1').count(), 1);
       assert.ok(await page.locator('link[rel="canonical"]').count());
       assert.ok(await page.locator('meta[property="og:image"]').count());
+      await page.keyboard.press('Tab');
+      assert.match(await page.locator(':focus').textContent(), /Skip to/);
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('main').evaluate((element) => element === document.activeElement), true);
       const targets = await page.locator('a:visible, button:visible').evaluateAll((nodes) => nodes.map((node) => {
         const box = node.getBoundingClientRect();
         return { label: node.textContent?.trim(), width: box.width, height: box.height };

@@ -5,6 +5,7 @@
 - Clarify landing-page storage and verify its offline cache separately from user-data stores.
 - Remove a duplicate desktop banner landmark from the website demo.
 - Test both user-info and credential-query URL rejection before fetch or output.
+- Move keyboard focus to page content when a skip link is activated.
 
 ## 0.1.0 — 2026-08-27
 
