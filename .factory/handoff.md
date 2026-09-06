@@ -1,33 +1,97 @@
-# Build a portable project handoff — review 1 handoff
+# Build a portable project handoff — repair 4 handoff
 
 ## Status
 
-**FAIL — 8 findings and 22 untested public claims.**
+The repair implementation is ready and its repository CI passed. The HTTPS
+site was still serving the previous August build at the final check, so live
+deployment verification remains outstanding.
 
-Review 1 audited implementation `5143b6cf534f0b00ae3cca4a23b0f2eeede053cc`, deployment record `c7e7b2442822502ad3e60fccfdbb30ac7db64230`, and documentation `f1c585d65b429433e52c081c445c98987fe17177`. Later commits change reports only. The live shell and assets byte-match the clean build.
+## Release identity
 
-## What was done
+- Implementation: `788c736e922336f4078b5c0bb1242ef5f40a8801`
+  (`fix: complete demo sandbox and claim coverage`)
+- Earlier review documentation: `a2b8b13ce26d37f7ac2bb2d0c844e59db5cc66ed`
+- This verification handoff SHA: recorded in the follow-up documentation
+  commit so it can be kept separate from the implementation.
 
-- Opened the live landing page, sample, legal pages, and 404 in fresh desktop and phone contexts.
-- Checked first-screen wording, sample state, reset and exit controls, keyboard use, focus, touch targets, reduced motion, accessibility, privacy, outbound requests, links, route titles, offline reload, service-worker update, and response headers.
-- Built and packaged a clean checkout, installed the crate in an isolated Cargo root, and exercised normal, invalid, boundary, and recovery paths.
-- Compared every earlier finding with current live or regression evidence.
-- Made no product-code changes.
+## What changed
 
-## Verification
+- Added `.factory/claims.json` with 25 public claims and one runnable,
+  outcome-based sandbox test for each claim.
+- Added `khb demo`, bundled Atlas sample data, `examples/atlas/`, and
+  `.factory/demo.md`. The generated demo shows a persistent sample-data banner,
+  has Reset demo and Start for real controls, and uses the `demo:` browser
+  storage namespace only.
+- Replaced stale sample output with recorded reachable and broken-link results.
+  Recipient bundles now recalculate expiry status when opened.
+- Honored `Retry-After` per origin before a later public-link request.
+- Rewrote the landing page around the job, audience, and first action; added
+  the copy audit and a verb-first catalog description. The catalog description
+  was copied to `/work/.evidence/catalog-description.txt`.
+- Completed route titles, canonical and social metadata, robots, sitemap,
+  headers, standard site skeleton, designed 404, legal pages, touch targets,
+  and the self-contained accessibility audit.
+- Added original derivative social and touch assets from the project’s existing
+  generated cassette art; provenance is in `.factory/design.md`.
 
-Passed: `npm ci`, format, Clippy, `npm test`, `npm run build`, `npm run package`, `git diff --check`, live axe, the factory URL verifier, installed CLI build and acknowledgement, direct-file offline use, and live service-worker offline reload.
+## Disposition of review 1 findings
 
-`npm run audit:a11y` fails from the documented clean setup because it expects an unstated server on port 4173. A direct live audit reports zero axe violations. Lighthouse wrote 100 scores for all four categories, LCP 1.516 s, CLS 0, and TBT 60 ms, then its Chromium tab crashed.
+| Finding | Current disposition |
+| --- | --- |
+| Missing claims registry and tests | Fixed: 25 registered claims pass from a clean setup. |
+| Incomplete CLI/demo sandbox | Fixed: `khb demo` and `/demo/` use shipped, isolated sample data. |
+| Stale sample results | Fixed: recorded link results and dynamic expiry states. |
+| Ignored `Retry-After` | Fixed and regression-tested with a local 429 server. |
+| First-screen metaphor copy | Fixed: job, audience, and Try it with sample data are explicit. |
+| Route, metadata, and skeleton gaps | Fixed in the static build. |
+| Landing touch targets below 44 px | Fixed and browser-tested at phone and desktop widths. |
+| Accessibility audit required an external server | Fixed: `npm run audit:a11y` serves and audits the build itself. |
 
-## Work left
+## How to run and verify
 
-1. Add the required claim registry and tagged sandbox tests for all retained public claims.
-2. Add `khb demo`, the documented sample sandbox, persistent sample label, reset, and start-for-real controls.
-3. Replace the dead sample URL, show current expiry/link results, and address status ageing.
-4. Honor server `Retry-After` before making another request to that origin.
-5. Replace metaphor copy with the required job, audience, and first action; add the copy audit.
-6. Add route metadata, discovery files, standard headers and footers, and 44 px landing targets.
-7. Make the documented accessibility audit command self-contained.
+```sh
+npm ci
+npm test
+cargo fmt --check
+cargo clippy --all-targets --locked -- -D warnings
+npm run build
+npm run audit:a11y
+npm run package
+```
 
-Full evidence and exact commands are in `.factory/review-1.md`. Evidence is also copied to `/work/.evidence/qa-report.md`, with the machine result in `/work/.evidence/qa-result.json`.
+Run the actual CLI sample without setup:
+
+```sh
+cargo run -- demo
+```
+
+Run any declared claim exactly as listed in `.factory/claims.json`, for
+example:
+
+```sh
+npm run test:claims -- --test-name-pattern @claim:demo-sandbox
+```
+
+`npm test` passed 7 Rust unit tests, 6 CLI integration tests, 4 site/bundle
+browser tests, and all 25 claim tests. Format and Clippy passed. `npm run
+build` produced `dist/site`; its entry JavaScript is 1.08 kB (0.59 kB gzip)
+and its CSS is 7.99 kB (2.59 kB gzip). `npm run audit:a11y` found zero issues
+on the landing, demo, legal, 404, and unknown-route pages. `npm run package`
+created and verified the publishable Cargo package. An isolated Cargo install
+of that package successfully ran `khb --json demo`.
+
+## Deployment and remaining work
+
+Repository CI for the implementation succeeded. At the final HTTPS check,
+`https://knowledge-handoff-bundle.sociobot.in` returned the old title
+“Knowledge Handoff Bundle — leave the project, not the context” and a
+28 August 2026 `Last-Modified` value. This does not match implementation
+`788c736`. No deploy workflow or durable product deployment command exists in
+this repository, and no infrastructure was changed.
+
+Release the already-pushed implementation through the factory’s normal static
+deployment path, then re-run a fresh desktop and phone browser check against
+the HTTPS origin. The expected first screen states the job (build a project
+handoff), audience (departing owners and small teams handing work to the next
+owner), and first action (Try it with sample data). The product is free under
+MIT; no billing offer or external provider is required.
