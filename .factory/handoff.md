@@ -1,8 +1,15 @@
-# Build a portable project handoff — repair 5 handoff
+# Build a portable project handoff — verification 6 handoff
 
 ## Status
 
 **PASS — 0 known findings and 0 untested claims.**
+
+Independent verification 6 reviewed implementation
+`55a75c27f029c3315831d9bf22d078b41672ac51` and documentation candidate
+`5c10cdda2d8a665bc0cd07bf02a36bb004988179`. The implementation and deployed
+site passed clean-checkout gates, all 25 individual claim commands, an
+installed-package consumer run, and fresh live phone/desktop checks. The full
+evidence is in `.factory/verification-6.md`.
 
 Repair 5 resolves all three strict-review findings. The free Rust CLI, static
 site, demo sandbox, offline behavior, and installed consumer artifact work end
@@ -12,8 +19,10 @@ to end. No paid offer or external integration applies to this product.
 
 - Implementation and deployed artifact: `55a75c27f029c3315831d9bf22d078b41672ac51`
 - Previous failed review report: `22710a553be3ed1e2d7fa4351d804419974b399b`
-- Documentation: the report-only commit containing this handoff; its exact SHA
-  is recorded in `/work/.evidence/verdict.json` after commit.
+- Documentation candidate reviewed: `5c10cdda2d8a665bc0cd07bf02a36bb004988179`.
+- Verification 6 report: `.factory/verification-6.md`; copied to
+  `/work/.evidence/qa-report.md` with matching PASS JSON at
+  `/work/.evidence/qa-result.json`.
 - Live URL: https://knowledge-handoff-bundle.sociobot.in
 - Deployment target: existing Azure Static Web App
   `sf-knowledge-handoff-bundle`, production environment, eastus2
