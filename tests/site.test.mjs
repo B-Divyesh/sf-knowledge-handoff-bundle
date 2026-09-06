@@ -80,6 +80,17 @@ test('the built 404 route keeps the site skeleton and a route home', async () =>
   } finally { await browser.close(); }
 });
 
+test('the desktop demo exposes one banner landmark', async () => {
+  const browser = await chromium.launch();
+  try {
+    const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(`${base}/demo/`, { waitUntil: 'networkidle' });
+    assert.equal(await page.getByRole('banner').count(), 1);
+    await context.close();
+  } finally { await browser.close(); }
+});
+
 test('a shell change produces a new service-worker cache identity', async () => {
   const output = mkdtempSync(join(tmpdir(), 'khb-site-worker-'));
   const template = new URL('../site/sw.template.js', import.meta.url);

@@ -13,6 +13,6 @@ copyButton?.addEventListener('click', async () => {
   }
 });
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+if ('serviceWorker' in navigator && window.isSecureContext) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
 }

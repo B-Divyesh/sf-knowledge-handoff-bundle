@@ -174,15 +174,41 @@ test('@claim:robots-respected respects robots.txt', async () => {
   } finally { await close(server); rmSync(directory, { recursive: true, force: true }); }
 });
 
-test('@claim:credential-urls-rejected rejects credential-bearing URLs before fetch or output', () => {
+test('@claim:credential-urls-rejected rejects user-info and credential-query URLs before fetch or output', async () => {
+  const paths = [];
+  const server = await serve((request, response) => {
+    paths.push(request.url);
+    response.end('should not be reached');
+  });
   const directory = temp('khb-credentials');
   try {
-    const yaml = writeSimpleHandoff(directory, ['{ id: secret, title: Secret, kind: url, url: "http://user:password@127.0.0.1:9/x?token=value", owner: Priya }']);
-    const output = run(['--json', 'build', yaml, '--output', join(directory, 'bundle'), '--check-links']);
-    assert.equal(output.status, 2);
-    assert.match(output.stdout, /artifact\.url_credentials/);
-    assert.doesNotMatch(output.stdout, /password|value/);
-  } finally { rmSync(directory, { recursive: true, force: true }); }
+    const port = server.address().port;
+    const cases = [
+      {
+        url: `http://claim-user:claim-password@127.0.0.1:${port}/userinfo`,
+        code: 'artifact.url_credentials',
+        secret: 'claim-password',
+        output: join(directory, 'userinfo-bundle'),
+      },
+      {
+        url: `http://127.0.0.1:${port}/query?access_token=claim-query-secret`,
+        code: 'artifact.url_secret',
+        secret: 'claim-query-secret',
+        output: join(directory, 'query-bundle'),
+      },
+    ];
+    for (const example of cases) {
+      const yaml = writeSimpleHandoff(directory, [`{ id: secret, title: Secret, kind: url, url: "${example.url}", owner: Priya }`]);
+      const result = await runAsync(['--json', 'build', yaml, '--output', example.output, '--check-links']);
+      assert.equal(result.status, 2, result.stderr);
+      const parsed = JSON.parse(result.stdout);
+      assert.equal(parsed.ok, false);
+      assert.ok(parsed.result.findings.some((finding) => finding.code === example.code));
+      assert.doesNotMatch(`${result.stdout}${result.stderr}`, new RegExp(example.secret));
+      assert.equal(statSync(example.output, { throwIfNoEntry: false }), undefined);
+    }
+    assert.deepEqual(paths, []);
+  } finally { await close(server); rmSync(directory, { recursive: true, force: true }); }
 });
 
 test('@claim:no-link-crawling checks only listed URLs and robots.txt', async () => {
@@ -292,11 +318,40 @@ test('@claim:scoped-file-access copies only listed files to the chosen output', 
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
-test('@claim:landing-stores-nothing leaves landing browser storage empty', { concurrency: false }, async () => {
+test('@claim:landing-storage-disclosed leaves user-data stores empty and caches only same-origin site files', { concurrency: false }, async () => {
   await withPage(async ({ base, page }) => {
     await page.goto(base, { waitUntil: 'networkidle' });
-    assert.equal((await page.evaluate(() => Object.keys(localStorage))).length, 0);
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload({ waitUntil: 'networkidle' });
+    const state = await page.evaluate(async () => {
+      const cacheNames = await caches.keys();
+      const cachedUrls = (await Promise.all(cacheNames.map(async (name) => {
+        const cache = await caches.open(name);
+        return (await cache.keys()).map((request) => request.url);
+      }))).flat();
+      return {
+        localStorageKeys: Object.keys(localStorage),
+        sessionStorageKeys: Object.keys(sessionStorage),
+        databases: await indexedDB.databases(),
+        registrations: (await navigator.serviceWorker.getRegistrations()).length,
+        controlled: navigator.serviceWorker.controller !== null,
+        cacheNames,
+        cachedUrls,
+      };
+    });
+    assert.deepEqual(state.localStorageKeys, []);
+    assert.deepEqual(state.sessionStorageKeys, []);
+    assert.deepEqual(state.databases, []);
     assert.equal((await page.context().cookies()).length, 0);
+    assert.equal(state.registrations, 1);
+    assert.equal(state.controlled, true);
+    assert.equal(state.cacheNames.length, 1);
+    assert.ok(state.cacheNames[0].startsWith('khb-site-'));
+    assert.ok(state.cachedUrls.length >= 4);
+    assert.ok(state.cachedUrls.every((url) => new URL(url).origin === base));
+    for (const pathname of ['/', '/cassette-handoff.webp', '/privacy/', '/terms/']) {
+      assert.ok(state.cachedUrls.includes(new URL(pathname, base).href), `offline cache omitted ${pathname}`);
+    }
   });
 });
 
@@ -306,6 +361,7 @@ test('@claim:landing-no-third-party loads no analytics, trackers, remote scripts
     page.on('request', (request) => requests.push(request.url()));
     await page.goto(base, { waitUntil: 'networkidle' });
     assert.ok(requests.every((url) => new URL(url).origin === base));
+    assert.equal((await page.context().cookies()).length, 0);
   });
 });
 
