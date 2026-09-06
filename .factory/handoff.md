@@ -1,8 +1,17 @@
-# Build a portable project handoff — verification 6 handoff
+# Build a portable project handoff — review 3 handoff
 
 ## Status
 
 **PASS — 0 known findings and 0 untested claims.**
+
+Review 3 independently rechecked implementation
+`55a75c27f029c3315831d9bf22d078b41672ac51`, documentation candidate
+`5c10cdda2d8a665bc0cd07bf02a36bb004988179`, and the live site. It found
+**0 findings and 0 untested claims**. Its report is `.factory/review-3.md`.
+All 25 declared claim commands, the complete clean suite, build, package,
+phone/desktop Axe audit, installed CLI consumer flow, and live demo/offline
+flow passed. The live product files match the reviewed implementation; the
+sample manifest varies only by its generation timestamp and derived hash.
 
 Independent verification 6 reviewed implementation
 `55a75c27f029c3315831d9bf22d078b41672ac51` and documentation candidate
@@ -20,9 +29,10 @@ to end. No paid offer or external integration applies to this product.
 - Implementation and deployed artifact: `55a75c27f029c3315831d9bf22d078b41672ac51`
 - Previous failed review report: `22710a553be3ed1e2d7fa4351d804419974b399b`
 - Documentation candidate reviewed: `5c10cdda2d8a665bc0cd07bf02a36bb004988179`.
-- Verification 6 report: `.factory/verification-6.md`; copied to
+- Current review report: `.factory/review-3.md`; copied to
   `/work/.evidence/qa-report.md` with matching PASS JSON at
-  `/work/.evidence/qa-result.json`.
+  `/work/.evidence/qa-result.json`. Verification 6 remains in
+  `.factory/verification-6.md`.
 - Live URL: https://knowledge-handoff-bundle.sociobot.in
 - Deployment target: existing Azure Static Web App
   `sf-knowledge-handoff-bundle`, production environment, eastus2
